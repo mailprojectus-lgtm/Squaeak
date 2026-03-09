@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="en">
+><head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Squeak - A Secret Shared</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Walter+Turncoat&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --background-light: #F7F4EE;
+            --background-dark: #1a1815;
+            --ink-light: #5C5C5C;
+            --ink-dark: #E0DBD3;
+            --accent-color: #9CADDF;
+            --accent-light-color: rgba(156, 173, 223, 0.55);
+            --handwritten-font: 'Walter Turncoat', cursive;
+            --spacing-unit: 8px;
+        }
+
+        html {
+            scroll-behavior: smooth;
+            scroll-snap-type: y mandatory;
+        }
+
+        body {
+            background-color: var(--background-light);
+            color: var(--ink-light);
+            font-family: var(--handwritten-font);
+            margin: 0;
+            padding: 0;
+            overflow-x: hidden;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 50px;
+            width: 1.5px;
+            height: 100%;
+            background-color: hsla(0, 75%, 65%, 0.35);
+            z-index: 10;
+            pointer-events: none;
+        }
+
+        main {
+            animation: fade-in 1.2s ease-out;
+        }
+
+        .experience-section {
+            height: 100vh;
+            width: 100vw;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            padding: calc(var(--spacing-unit) * 4);
+            box-sizing: border-box;
+            scroll-snap-align: start;
+            position: relative;
+            background-image: repeating-linear-gradient(transparent 0, transparent 47px, hsla(0,0%,36%,.12) 47px, hsla(0,0%,36%,.12) 48px);
+            background-size: 100% 48px;
+        }
+
+        .experience-section.dark {
+            background-color: var(--background-dark);
+            color: var(--ink-dark);
+            background-image: repeating-linear-gradient(transparent 0, transparent 47px, hsla(39,23%,85%,.08) 47px, hsla(39,23%,85%,.08) 48px);
+        }
+
+        /* Hero Section */
+        #hero {
+            flex-direction: row;
+            justify-content: space-evenly;
+            gap: 20px;
+            align-items: center;
+        }
+        #hero .mascot {
+            height: 300px;
+            width: auto;
+            animation: float 12s ease-in-out infinite;
+        }
+        #hero .hero-content {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            text-align: left;
+            gap: calc(var(--spacing-unit) * 2);
+        }
+        #hero .title {
+            font-size: 84px;
+            color: var(--ink-light);
+            margin: 0;
+        }
+        #hero .subtitle {
+            font-size: 24px;
+            color: var(--ink-light);
+            margin: 0;
+        }
+        .store-buttons {
+            display: flex;
+            gap: calc(var(--spacing-unit) * 2);
+            margin-top: calc(var(--spacing-unit) * 2);
+        }
+        .store-button {
+            display: inline-block;
+            padding: calc(var(--spacing-unit) * 1.5) calc(var(--spacing-unit) * 3);
+            border: 1.5px solid var(--ink-light);
+            border-radius: 12px;
+            text-decoration: none;
+            color: var(--ink-light);
+            font-size: 18px;
+            transition: all 0.2s ease-out;
+            background-color: transparent;
+            box-shadow: 2px 2px 0px 0px var(--ink-light);
+        }
+        .store-button:hover {
+            box-shadow: 4px 4px 0px 0px var(--ink-light);
+        }
+        .store-button:active {
+            transform: translate(2px, 2px);
+            box-shadow: 0px 0px 0px 0px var(--ink-light);
+        }
+        .dark .store-button {
+            border-color: var(--ink-dark);
+            color: var(--ink-dark);
+            box-shadow: 2px 2px 0px 0px var(--ink-dark);
+        }
+        .dark .store-button:hover {
+            box-shadow: 4px 4px 0px 0px var(--ink-dark);
+        }
+        .dark .store-button:active {
+            box-shadow: 0px 0px 0px 0px var(--ink-dark);
+        }
+
+        /* Down Arrow */
+        .down-arrow {
+            position: absolute;
+            bottom: 40px;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+        .down-arrow a {
+            color: inherit;
+            text-decoration: none;
+            display: inline-block;
+            animation: bounce 2s infinite;
+        }
+
+        /* Text & Animation Styles */
+        .animated-text {
+            font-size: 32px;
+            line-height: 1.5;
+            max-width: 600px;
+        }
+
+        .fade-in-up {
+            opacity: 0;
+            transform: translateY(30px);
+            transition: opacity 1.2s ease-out, transform 1s ease-out;
+        }
+        .visible .fade-in-up {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        .visible .fade-in-up.delay-1 { transition-delay: 0.3s; }
+        .visible .fade-in-up.delay-2 { transition-delay: 0.6s; }
+
+
+        /* Diagram Styles */
+        #connection {
+            padding-bottom: 12vh; /* Moves the content block up */
+        }
+        #connection .animated-text {
+            margin-bottom: calc(var(--spacing-unit) * 1); /* Sets a small space between the text lines */
+        }
+        .diagram-container {
+            width: 220px;
+            height: 210px;
+            position: relative;
+            margin: calc(var(--spacing-unit) * 5) 0; /* Adds more space between the text and the diagram */
+        }
+        .ring {
+            position: absolute;
+            width: 160px;
+            height: 160px;
+            border: 1.5px dashed var(--accent-light-color);
+            border-radius: 50%;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            opacity: 0;
+            transition: opacity 1s ease-in-out 1.5s;
+        }
+        .visible .ring {
+            opacity: 1;
+        }
+        .node {
+            position: absolute;
+            width: 48px;
+            height: 48px;
+            background-color: var(--background-dark);
+            border: 1.5px solid var(--accent-color);
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 17px;
+            color: var(--ink-dark);
+            opacity: 0;
+            transform: scale(0.5);
+            box-shadow: 2px 2px 0px 0px var(--accent-color);
+        }
+        .visible .node {
+            opacity: 1;
+            transform: scale(1);
+        }
+        .visible .node-a { transition: all 0.5s ease 0.5s; }
+        .visible .node-b { transition: all 0.5s ease 0.8s; }
+        .visible .node-c { transition: all 0.5s ease 1.1s; }
+        .node-a { top: calc(50% - 80px - 24px); left: calc(50% - 24px); }
+        .node-b { top: calc(50% + 40px - 24px); left: calc(50% - 69.28px - 24px); }
+        .node-c { top: calc(50% + 40px - 24px); left: calc(50% + 69.28px - 24px); }
+        
+        .circle-labels p {
+            margin: 2px 0;
+            opacity: 0;
+            transform: translateY(10px);
+        }
+        .circle-labels .letter { color: var(--accent-color); }
+        .visible .circle-labels p {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        .visible .circle-labels .line-1 { transition: all 0.5s ease 1.8s; }
+        .visible .circle-labels .line-2 { transition: all 0.5s ease 2.0s; }
+        .visible .circle-labels .line-3 { transition: all 0.5s ease 2.2s; }
+        
+
+        /* Keyframe Animations */
+        @keyframes fade-in {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        @keyframes float {
+            0% { transform: translateY(0px); }
+            50% { transform: translateY(-20px); }
+            100% { transform: translateY(0px); }
+        }
+        @keyframes bounce {
+            0%, 100% {
+                transform: translateY(0);
+            }
+            50% {
+                transform: translateY(-8px);
+            }
+        }
+                .footer-note {
+                    position: absolute;
+                    bottom: 20px;
+                    left: 50%;
+                    transform: translateX(-50%);
+                    font-size: 12px;
+                    color: rgba(0,0,0,0.3);
+                    text-align: center;
+                    display: flex;
+                    align-items: center;
+                    gap: 30px;
+                }
+        
+        .social-links {
+                    display: flex;
+                    gap: 20px;
+                    position: absolute;
+                    bottom: 30px;
+                    right: 40px;
+                }
+        
+        .social-links a {
+                    display: inline-flex;
+                    align-items: center;
+                    justify-content: center;
+                    width: 40px;
+                    height: 40px;
+                    border-radius: 50%;
+                    border: 1.5px solid var(--ink-light);
+                    color: var(--ink-light);
+                    text-decoration: none;
+                    transition: all 0.2s ease;
+                    font-size: 20px;
+                }
+        
+        .social-links a:hover {
+                    transform: scale(1.1);
+                    box-shadow: 2px 2px 8px rgba(0,0,0,0.2);
+                }
+        
+        .dark .social-links a {
+                    border-color: var(--ink-dark);
+                    color: var(--ink-dark);
+                }
+            </style>
+        </head>
+        <body>
+        
+                <main>
+                    <section id="hero" class="experience-section">
+                        <div class="hero-content">
+                            <h1 class="title">Squeak</h1>
+                            <p class="subtitle">Your secret diary. Shared with a stranger.</p>
+                            <div class="store-buttons">
+                                <a href="#" class="store-button">App Store</a>
+                                <a href="#" class="store-button">Google Play</a>
+                            </div>
+                        </div>
+                        <img src="mascotte.png" alt="Squeak Mascot" class="mascot">
+                        <div class="down-arrow">
+                            <a href="#loneliness"><svg width="28" height="32" viewBox="0 0 100 100" style="display: block;"><path d="M50 20 Q 48 50, 50 80" stroke="currentColor" stroke-width="8" fill="none" stroke-linecap="round" /><path d="M38 68 L 50 80 L 62 68" stroke="currentColor" stroke-width="8" fill="none" stroke-linecap="round" stroke-linejoin="round" /></svg></a>
+                        </div>
+                    </section>        
+                <section id="loneliness" class="experience-section dark">
+                    <p class="animated-text fade-in-up">Sometimes it feels like you're speaking into a void...</p>
+                    <p class="animated-text fade-in-up delay-1">...and the echo is just your own voice.</p>
+                    <div class="down-arrow">
+                        <a href="#connection"><svg width="28" height="32" viewBox="0 0 100 100" style="display: block;"><path d="M50 20 Q 48 50, 50 80" stroke="currentColor" stroke-width="8" fill="none" stroke-linecap="round" /><path d="M38 68 L 50 80 L 62 68" stroke="currentColor" stroke-width="8" fill="none" stroke-linecap="round" stroke-linejoin="round" /></svg></a>
+                    </div>
+                </section>
+        
+                <section id="connection" class="experience-section dark">
+                     <p class="animated-text fade-in-up">But we all have a need to be heard.</p>
+                     <p class="animated-text fade-in-up delay-1">To be seen. To connect...</p>
+                     <div class="diagram-container fade-in-up delay-1">
+                        <div class="ring"></div>
+                        <div class="node node-a">A</div>
+                        <div class="node node-b">B</div>
+                        <div class="node node-c">C</div>
+                    </div>
+                    <div class="circle-labels fade-in-up delay-2">
+                        <p class="line-1"><span class="letter">A</span> writes for B</p>
+                        <p class="line-2"><span class="letter">B</span> writes for C</p>
+                        <p class="line-3"><span class="letter">C</span> writes for A</p>
+                    </div>
+                    <div class="down-arrow">
+                        <a href="#squeak"><svg width="28" height="32" viewBox="0 0 100 100" style="display: block;"><path d="M50 20 Q 48 50, 50 80" stroke="currentColor" stroke-width="8" fill="none" stroke-linecap="round" /><path d="M38 68 L 50 80 L 62 68" stroke="currentColor" stroke-width="8" fill="none" stroke-linecap="round" stroke-linejoin="round" /></svg></a>
+                    </div>
+                </section>
+        
+                <section id="squeak" class="experience-section">
+                    <p class="animated-text fade-in-up">An anonymous experiment and a quiet connection.</p>
+                    <p class="animated-text fade-in-up delay-1">You write for a stranger. You read another.</p>
+                    <p class="animated-text fade-in-up delay-2">And at the end of the month, a quiet farewell.</p>
+                    <div class="down-arrow">
+                        <a href="#cta"><svg width="28" height="32" viewBox="0 0 100 100" style="display: block;"><path d="M50 20 Q 48 50, 50 80" stroke="currentColor" stroke-width="8" fill="none" stroke-linecap="round" /><path d="M38 68 L 50 80 L 62 68" stroke="currentColor" stroke-width="8" fill="none" stroke-linecap="round" stroke-linejoin="round" /></svg></a>
+                    </div>
+                </section>
+        
+                <section id="cta" class="experience-section">
+                    <p class="animated-text">Find your first connection. <br> Start sharing your journey.</p>
+                    <div class="store-buttons">
+                        <a href="#" class="store-button">App Store</a>
+                        <a href="#" class="store-button">Google Play</a>
+                    </div>
+                    <div class="social-links">
+                        <a href="https://x.com/Squeak_jounrnal" target="_blank" rel="noopener noreferrer" title="Twitter">
+                            <img src="twitter.png" alt="Twitter" width="24" height="24">
+                        </a>
+                        <a href="#" title="TikTok - Coming Soon" style="opacity: 0.5; cursor: not-allowed;">
+                            <img src="tiktok.png" alt="TikTok" width="24" height="24">
+                        </a>
+                    </div>
+                    <footer class="footer-note">
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <span>Unique visitors:</span>
+                            <img src="https://github.com/mailprojectus-lgtm/Squaeak" alt="Hits">
+                            <span>| Thank you for checking out the project.</span>
+                        </div>
+                    </footer>
+                </section>
+                        </main>
+                    
+                        <script>
+                            document.addEventListener('DOMContentLoaded', () => {
+                                // Keep your Intersection Observer for the scroll animations!
+                                const sections = document.querySelectorAll('.experience-section');
+                                const observer = new IntersectionObserver((entries) => {
+                                    entries.forEach(entry => {
+                                        if (entry.isIntersecting) {
+                                            entry.target.classList.add('visible');
+                                        }
+                                    });
+                                }, {
+                                    rootMargin: '0px',
+                                    threshold: 0.5 
+                                });
+                                
+                                sections.forEach(section => {
+                                    observer.observe(section);
+                                });
+
+                                // I HAVE REMOVED THE OLD VISITOR COUNTER LOGIC FROM HERE 
+                                // Because the 'Hits' <img> tag handles everything automatically now.
+                            });
+                        </script>
+                    
+                    </body>
+                    </html>

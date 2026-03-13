@@ -7,6 +7,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Walter+Turncoat&display=swap" rel="stylesheet">
+    <script data-goatcounter="https://squeakapp.goatcounter.com/count" async src="//gc.zgo.at/count.js"></script>
     <style>
         :root {
             --background-light: #F7F4EE;
@@ -20,14 +21,8 @@
         }
 
         html {
-            scroll-behavior: smooth;
-            scroll-snap-type: y mandatory;
-        }
-
-        /* Use dynamic viewport height so mobile browser chrome doesn't cut off content */
-        .experience-section {
-            min-height: 100vh; /* fallback */
-            min-height: 100dvh;
+            height: 100%;
+            overflow: hidden;
         }
 
         body {
@@ -36,7 +31,8 @@
             font-family: var(--handwritten-font);
             margin: 0;
             padding: 0;
-            overflow-x: hidden;
+            height: 100%;
+            overflow: hidden;
         }
 
         body::before {
@@ -52,11 +48,17 @@
         }
 
         main {
-            animation: fade-in 1.2s ease-out;
+            position: relative;
+            height: 100%;
+            animation: fade-in 0.8s ease-out;
         }
 
         .experience-section {
+            position: absolute;
+            top: 0;
+            left: 0;
             width: 100%;
+            height: 100%;
             display: flex;
             flex-direction: column;
             justify-content: center;
@@ -64,10 +66,16 @@
             text-align: center;
             padding: calc(var(--spacing-unit) * 4);
             box-sizing: border-box;
-            scroll-snap-align: start;
-            position: relative;
             background-image: repeating-linear-gradient(transparent 0, transparent 47px, hsla(0,0%,36%,.12) 47px, hsla(0,0%,36%,.12) 48px);
             background-size: 100% 48px;
+            will-change: transform;
+            /* All sections start off-screen below; JS positions section 0 at Y=0 */
+            transform: translateY(100%);
+        }
+
+        /* First section visible immediately before JS runs */
+        .experience-section:first-child {
+            transform: translateY(0);
         }
 
         .experience-section.dark {
@@ -334,11 +342,6 @@
 
         /* ── Responsive: Tablet (≤ 900px) ── */
         @media (max-width: 900px) {
-            html {
-                /* proximity is gentler — lets content-heavy sections scroll freely */
-                scroll-snap-type: y proximity;
-            }
-
             body::before {
                 left: 10px;
             }
@@ -430,16 +433,11 @@
 
         /* ── Responsive: Small phones (≤ 480px) ── */
         @media (max-width: 480px) {
-            html {
-                scroll-snap-type: none; /* disable snap on tiny screens — let it free-scroll */
-            }
-
             body::before {
                 display: none;
             }
 
             .experience-section {
-                min-height: 100svh; /* safe-area aware height */
                 padding: 48px 20px 72px;
                 justify-content: flex-start;
                 padding-top: max(48px, env(safe-area-inset-top, 48px));
@@ -663,14 +661,103 @@
     <script>
     document.addEventListener('DOMContentLoaded', () => {
 
-        // ── Scroll-triggered animations ──
-        const sections = document.querySelectorAll('.experience-section');
-        const observer = new IntersectionObserver((entries) => {
-            entries.forEach(entry => {
-                if (entry.isIntersecting) entry.target.classList.add('visible');
-            });
-        }, { rootMargin: '0px', threshold: 0.4 });
-        sections.forEach(s => observer.observe(s));
+        // ══════════════════════════════════════════
+        // Full-page scroll engine
+        // ══════════════════════════════════════════
+        const sections = [...document.querySelectorAll('.experience-section')];
+        let current  = 0;
+        let busy     = false;
+        const DUR    = 680; // ms — transition duration
+        const SLIDE  = 'cubic-bezier(0.76, 0, 0.24, 1)';   // smooth slide
+        const SPRING = 'cubic-bezier(0.34, 1.56, 0.64, 1)'; // elastic bounce-back
+
+        // Pre-position: first section visible, rest stacked below
+        sections.forEach((s, i) => {
+            s.style.transform = i === 0 ? 'translateY(0)' : 'translateY(100%)';
+            s.style.zIndex    = i === 0 ? '1' : '0';
+            if (i === 0) s.classList.add('visible');
+        });
+
+        // Navigate to section at index `next`
+        function goTo(next) {
+            if (busy) return;
+            if (next < 0 || next >= sections.length) {
+                elasticBounce(sections[current], next < 0 ? 1 : -1);
+                return;
+            }
+            if (next === current) return;
+            busy = true;
+
+            const dir  = next > current ? 1 : -1;
+            const from = sections[current];
+            const to   = sections[next];
+
+            // Snap target just off-screen, then animate both together
+            to.style.transition = 'none';
+            to.style.transform  = `translateY(${dir * 100}%)`;
+            to.style.zIndex     = '2';
+            from.style.zIndex   = '1';
+            to.getBoundingClientRect(); // force reflow
+
+            from.style.transition = `transform ${DUR}ms ${SLIDE}`;
+            from.style.transform  = `translateY(${-dir * 100}%)`;
+            to.style.transition   = `transform ${DUR}ms ${SLIDE}`;
+            to.style.transform    = 'translateY(0)';
+            to.classList.add('visible');
+
+            current = next;
+            setTimeout(() => {
+                from.style.zIndex = '0';
+                to.style.zIndex   = '1';
+                busy = false;
+            }, DUR);
+        }
+
+        // Elastic bounce when already at first / last section
+        function elasticBounce(section, dir) {
+            if (busy) return;
+            busy = true;
+            section.style.transition = 'transform 0.16s ease-out';
+            section.style.transform  = `translateY(${dir * 24}px)`;
+            setTimeout(() => {
+                section.style.transition = `transform 0.55s ${SPRING}`;
+                section.style.transform  = 'translateY(0)';
+                setTimeout(() => { busy = false; }, 550);
+            }, 160);
+        }
+
+        // ── Wheel (desktop trackpad / mouse) ──
+        let wheelLock = false;
+        document.addEventListener('wheel', e => {
+            e.preventDefault();
+            if (wheelLock) return;
+            wheelLock = true;
+            goTo(current + (e.deltaY > 0 ? 1 : -1));
+            setTimeout(() => { wheelLock = false; }, DUR + 80);
+        }, { passive: false });
+
+        // ── Touch swipe (mobile) ──
+        let touchY = 0, touchT = 0;
+        document.addEventListener('touchstart', e => {
+            touchY = e.touches[0].clientY;
+            touchT = Date.now();
+        }, { passive: true });
+        document.addEventListener('touchend', e => {
+            const dy = touchY - e.changedTouches[0].clientY;
+            const dt = Date.now() - touchT;
+            if (Math.abs(dy) > 45 && dt < 500) goTo(current + (dy > 0 ? 1 : -1));
+        }, { passive: true });
+
+        // ── Keyboard ──
+        document.addEventListener('keydown', e => {
+            const map = { ArrowDown: 1, ArrowUp: -1, PageDown: 1, PageUp: -1 };
+            if (e.key in map) { e.preventDefault(); goTo(current + map[e.key]); }
+        });
+
+        // ── Down-arrow clicks ──
+        document.querySelectorAll('.down-arrow a').forEach(a => {
+            a.addEventListener('click', e => { e.preventDefault(); goTo(current + 1); });
+        });
 
         // ── Translations ──
         const translations = {
@@ -864,52 +951,28 @@
 
         applyTranslations(getPreferredLang());
 
-        // ── Visitor counter (unique per browser) ──
-        // counterapi.dev is the maintained successor to the defunct countapi.xyz.
-        // On failure the whole footer row is hidden so there's no broken UI.
-        const visitorStorageKey = 'squeak-visitor-v2';
-        const API = 'https://api.counterapi.dev/v1/squeakapp/visitors';
-        const footerEl = document.querySelector('#cta .footer-note');
+        // ── Visitor counter via GoatCounter public API ──
+        // GoatCounter tracks & deduplicates visitors automatically.
+        // The /counter/ endpoint is public and requires no auth.
         const countEl  = document.getElementById('visitors-count');
+        const footerEl = document.querySelector('#cta .footer-note');
 
-        // AbortController lets us cancel a stalled request after 5 s
-        const timedFetch = (url) => {
-            const ctrl = new AbortController();
-            const timer = setTimeout(() => ctrl.abort(), 5000);
-            return fetch(url, { signal: ctrl.signal })
-                .finally(() => clearTimeout(timer));
-        };
-
-        const setCount = (n) => {
-            if (!countEl) return;
-            if (typeof n === 'number') {
-                countEl.textContent = n.toLocaleString();
-            } else if (footerEl) {
-                footerEl.style.display = 'none'; // hide cleanly on any failure
-            }
-        };
-
-        const fetchCount = () =>
-            timedFetch(API)
-                .then(r => { if (!r.ok) throw new Error(r.status); return r.json(); })
-                .then(j => setCount(j.count))
-                .catch(() => { if (footerEl) footerEl.style.display = 'none'; });
-
-        if (localStorage.getItem(visitorStorageKey)) {
-            fetchCount();
-        } else {
-            timedFetch(`${API}/up`)
-                .then(r => { if (!r.ok) throw new Error(r.status); return r.json(); })
-                .then(j => {
-                    if (typeof j.count === 'number') {
-                        setCount(j.count);
-                        localStorage.setItem(visitorStorageKey, '1');
-                    } else {
-                        fetchCount();
-                    }
-                })
-                .catch(() => fetchCount());
-        }
+        const ctrl  = new AbortController();
+        const timer = setTimeout(() => ctrl.abort(), 6000);
+        fetch('https://squeakapp.goatcounter.com/counter/%2F.json', {
+            cache: 'no-store',
+            signal: ctrl.signal,
+        })
+            .finally(() => clearTimeout(timer))
+            .then(r => { if (!r.ok) throw r; return r.json(); })
+            .then(j => {
+                // GoatCounter returns count_unique as a pre-formatted string ("1,234")
+                const val = j.count_unique ?? j.count;
+                if (countEl && val != null) countEl.textContent = String(val);
+            })
+            .catch(() => {
+                if (footerEl) footerEl.style.display = 'none';
+            });
 
     });
     </script>

@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" dir="ltr">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -22,6 +22,12 @@
         html {
             scroll-behavior: smooth;
             scroll-snap-type: y mandatory;
+        }
+
+        /* Use dynamic viewport height so mobile browser chrome doesn't cut off content */
+        .experience-section {
+            min-height: 100vh; /* fallback */
+            min-height: 100dvh;
         }
 
         body {
@@ -50,7 +56,6 @@
         }
 
         .experience-section {
-            min-height: 100vh;
             width: 100%;
             display: flex;
             flex-direction: column;
@@ -71,7 +76,7 @@
             background-image: repeating-linear-gradient(transparent 0, transparent 47px, hsla(39,23%,85%,.08) 47px, hsla(39,23%,85%,.08) 48px);
         }
 
-        /* Hero Section */
+        /* ── Hero Section ── */
         #hero {
             flex-direction: row;
             justify-content: space-evenly;
@@ -94,16 +99,20 @@
             font-size: 84px;
             color: var(--ink-light);
             margin: 0;
+            line-height: 1.1;
         }
         #hero .subtitle {
             font-size: 24px;
             color: var(--ink-light);
             margin: 0;
         }
+
+        /* ── Store Buttons ── */
         .store-buttons {
             display: flex;
             gap: calc(var(--spacing-unit) * 2);
             margin-top: calc(var(--spacing-unit) * 2);
+            flex-wrap: wrap;
         }
         .store-button {
             display: inline-block;
@@ -113,6 +122,7 @@
             text-decoration: none;
             color: var(--ink-light);
             font-size: 18px;
+            font-family: var(--handwritten-font);
             transition: all 0.2s ease-out;
             background-color: transparent;
             box-shadow: 2px 2px 0px 0px var(--ink-light);
@@ -136,7 +146,7 @@
             box-shadow: 0px 0px 0px 0px var(--ink-dark);
         }
 
-        /* Down Arrow */
+        /* ── Down Arrow ── */
         .down-arrow {
             position: absolute;
             bottom: 40px;
@@ -148,13 +158,19 @@
             text-decoration: none;
             display: inline-block;
             animation: bounce 2s infinite;
+            opacity: 0.6;
+            transition: opacity 0.2s;
+        }
+        .down-arrow a:hover {
+            opacity: 1;
         }
 
-        /* Text & Animation Styles */
+        /* ── Text & Animation ── */
         .animated-text {
             font-size: 32px;
             line-height: 1.5;
             max-width: 600px;
+            margin: 0.3em 0;
         }
 
         .fade-in-up {
@@ -169,19 +185,18 @@
         .visible .fade-in-up.delay-1 { transition-delay: 0.3s; }
         .visible .fade-in-up.delay-2 { transition-delay: 0.6s; }
 
-
-        /* Diagram Styles */
+        /* ── Diagram ── */
         #connection {
-            padding-bottom: 12vh; /* Moves the content block up */
+            padding-bottom: 12vh;
         }
         #connection .animated-text {
-            margin-bottom: calc(var(--spacing-unit) * 1); /* Sets a small space between the text lines */
+            margin-bottom: calc(var(--spacing-unit) * 1);
         }
         .diagram-container {
             width: 220px;
             height: 210px;
             position: relative;
-            margin: calc(var(--spacing-unit) * 5) 0; /* Adds more space between the text and the diagram */
+            margin: calc(var(--spacing-unit) * 5) 0;
         }
         .ring {
             position: absolute;
@@ -224,7 +239,11 @@
         .node-a { top: calc(50% - 80px - 24px); left: calc(50% - 24px); }
         .node-b { top: calc(50% + 40px - 24px); left: calc(50% - 69.28px - 24px); }
         .node-c { top: calc(50% + 40px - 24px); left: calc(50% + 69.28px - 24px); }
-        
+
+        .circle-labels {
+            font-size: 18px;
+            line-height: 1.8;
+        }
         .circle-labels p {
             margin: 2px 0;
             opacity: 0;
@@ -238,84 +257,100 @@
         .visible .circle-labels .line-1 { transition: all 0.5s ease 1.8s; }
         .visible .circle-labels .line-2 { transition: all 0.5s ease 2.0s; }
         .visible .circle-labels .line-3 { transition: all 0.5s ease 2.2s; }
-        
 
-        /* Keyframe Animations */
+        /* ── Footer & Social ── */
+        .footer-note {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 12px;
+            color: rgba(0,0,0,0.3);
+            text-align: center;
+            display: flex;
+            align-items: center;
+            gap: 30px;
+            white-space: nowrap;
+        }
+
+        .social-links {
+            display: flex;
+            gap: 20px;
+            position: absolute;
+            bottom: 30px;
+            right: 40px;
+        }
+
+        .social-links a {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            border: 1.5px solid var(--ink-light);
+            color: var(--ink-light);
+            text-decoration: none;
+            transition: all 0.2s ease;
+            font-size: 20px;
+        }
+
+        .social-links a:hover {
+            transform: scale(1.1);
+            box-shadow: 2px 2px 8px rgba(0,0,0,0.2);
+        }
+
+        .dark .social-links a {
+            border-color: var(--ink-dark);
+            color: var(--ink-dark);
+        }
+
+        /* ── Keyframe Animations ── */
         @keyframes fade-in {
             from { opacity: 0; }
             to { opacity: 1; }
         }
         @keyframes float {
-            0% { transform: translateY(0px); }
-            50% { transform: translateY(-20px); }
+            0%   { transform: translateY(0px); }
+            50%  { transform: translateY(-20px); }
             100% { transform: translateY(0px); }
         }
         @keyframes bounce {
-            0%, 100% {
-                transform: translateY(0);
-            }
-            50% {
-                transform: translateY(-8px);
-            }
+            0%, 100% { transform: translateY(0); }
+            50%       { transform: translateY(-8px); }
         }
-                .footer-note {
-                    position: absolute;
-                    bottom: 20px;
-                    left: 50%;
-                    transform: translateX(-50%);
-                    font-size: 12px;
-                    color: rgba(0,0,0,0.3);
-                    text-align: center;
-                    display: flex;
-                    align-items: center;
-                    gap: 30px;
-                }
-        
-        .social-links {
-                    display: flex;
-                    gap: 20px;
-                    position: absolute;
-                    bottom: 30px;
-                    right: 40px;
-                }
-        
-        .social-links a {
-                    display: inline-flex;
-                    align-items: center;
-                    justify-content: center;
-                    width: 40px;
-                    height: 40px;
-                    border-radius: 50%;
-                    border: 1.5px solid var(--ink-light);
-                    color: var(--ink-light);
-                    text-decoration: none;
-                    transition: all 0.2s ease;
-                    font-size: 20px;
-                }
-        
-        .social-links a:hover {
-                    transform: scale(1.1);
-                    box-shadow: 2px 2px 8px rgba(0,0,0,0.2);
-                }
-        
-        .dark .social-links a {
-                    border-color: var(--ink-dark);
-                    color: var(--ink-dark);
-                }
 
-        /* Responsive adjustments */
+        /* ── RTL support ── */
+        [dir="rtl"] #hero .hero-content {
+            align-items: flex-end;
+            text-align: right;
+        }
+        [dir="rtl"] .store-buttons {
+            justify-content: flex-end;
+        }
+        [dir="rtl"] .footer-note {
+            direction: rtl;
+        }
+
+        /* ── Responsive: Tablet (≤ 900px) ── */
         @media (max-width: 900px) {
+            html {
+                /* proximity is gentler — lets content-heavy sections scroll freely */
+                scroll-snap-type: y proximity;
+            }
+
             body::before {
                 left: 10px;
             }
 
             #hero {
                 flex-direction: column;
-                gap: calc(var(--spacing-unit) * 2);
+                gap: calc(var(--spacing-unit) * 1.5);
+                /* no extra padding-top — let it center naturally */
             }
 
             #hero .mascot {
-                height: 220px;
+                height: 200px;
                 max-width: 90%;
             }
 
@@ -339,327 +374,495 @@
 
             .store-button {
                 width: 100%;
-                max-width: 280px;
+                max-width: 260px;
                 text-align: center;
+                box-sizing: border-box;
             }
 
+            .animated-text {
+                font-size: 26px;
+            }
+
+            /* Give sections bottom padding so the absolute arrow doesn't sit on content */
             .experience-section {
-                padding: calc(var(--spacing-unit) * 3);
+                padding: calc(var(--spacing-unit) * 4);
+                padding-bottom: 80px;
+            }
+
+            /* Connection section: reduce its extra push-down */
+            #connection {
+                padding-bottom: 80px;
+            }
+            .diagram-container {
+                margin: calc(var(--spacing-unit) * 3) 0;
+            }
+
+            /* CTA section: social links + footer flow inline */
+            #cta {
+                padding-bottom: calc(var(--spacing-unit) * 4);
+                gap: calc(var(--spacing-unit) * 2);
             }
 
             .footer-note {
                 position: static;
-                padding: calc(var(--spacing-unit) * 2);
-                gap: 12px;
+                padding: calc(var(--spacing-unit) * 2) 0 0;
+                gap: 8px;
                 flex-wrap: wrap;
                 justify-content: center;
+                white-space: normal;
             }
 
             .social-links {
                 position: static;
-                margin-top: 18px;
+                margin-top: calc(var(--spacing-unit) * 2);
+                justify-content: center;
             }
 
             .down-arrow {
-                bottom: 18px;
+                bottom: 16px;
+            }
+
+            [dir="rtl"] #hero .hero-content {
+                align-items: center;
+                text-align: center;
             }
         }
-            </style>
-        </head>
-        <body>
-        
-                <main>
-                    <section id="hero" class="experience-section">
-                        <div class="hero-content">
-                            <h1 class="title" data-i18n="title">Squeak</h1>
-                            <p class="subtitle" data-i18n="subtitle">Your secret diary. Shared with a stranger.</p>
-                            <div class="store-buttons">
-                                <a href="#" class="store-button" data-i18n="appStore">App Store</a>
-                                <a href="#" class="store-button" data-i18n="googlePlay">Google Play</a>
-                            </div>
-                        </div>
-                        <img src="mascotte.png" alt="Squeak Mascot" class="mascot">
-                        <div class="down-arrow">
-                            <a href="#loneliness"><svg width="28" height="32" viewBox="0 0 100 100" style="display: block;"><path d="M50 20 Q 48 50, 50 80" stroke="currentColor" stroke-width="8" fill="none" stroke-linecap="round" /><path d="M38 68 L 50 80 L 62 68" stroke="currentColor" stroke-width="8" fill="none" stroke-linecap="round" stroke-linejoin="round" /></svg></a>
-                        </div>
-                    </section>        
-                <section id="loneliness" class="experience-section dark">
-                    <p class="animated-text fade-in-up" data-i18n="loneliness1">Sometimes it feels like you're speaking into a void...</p>
-                    <p class="animated-text fade-in-up delay-1" data-i18n="loneliness2">...and the echo is just your own voice.</p>
-                    <div class="down-arrow">
-                        <a href="#connection"><svg width="28" height="32" viewBox="0 0 100 100" style="display: block;"><path d="M50 20 Q 48 50, 50 80" stroke="currentColor" stroke-width="8" fill="none" stroke-linecap="round" /><path d="M38 68 L 50 80 L 62 68" stroke="currentColor" stroke-width="8" fill="none" stroke-linecap="round" stroke-linejoin="round" /></svg></a>
-                    </div>
-                </section>
-        
-                <section id="connection" class="experience-section dark">
-                     <p class="animated-text fade-in-up" data-i18n="connection1">But we all have a need to be heard.</p>
-                     <p class="animated-text fade-in-up delay-1" data-i18n="connection2">To be seen. To connect...</p>
-                     <div class="diagram-container fade-in-up delay-1">
-                        <div class="ring"></div>
-                        <div class="node node-a">A</div>
-                        <div class="node node-b">B</div>
-                        <div class="node node-c">C</div>
-                    </div>
-                    <div class="circle-labels fade-in-up delay-2">
-                        <p class="line-1"><span class="letter">A</span> writes for B</p>
-                        <p class="line-2"><span class="letter">B</span> writes for C</p>
-                        <p class="line-3"><span class="letter">C</span> writes for A</p>
-                    </div>
-                    <div class="down-arrow">
-                        <a href="#squeak"><svg width="28" height="32" viewBox="0 0 100 100" style="display: block;"><path d="M50 20 Q 48 50, 50 80" stroke="currentColor" stroke-width="8" fill="none" stroke-linecap="round" /><path d="M38 68 L 50 80 L 62 68" stroke="currentColor" stroke-width="8" fill="none" stroke-linecap="round" stroke-linejoin="round" /></svg></a>
-                    </div>
-                </section>
-        
-                <section id="squeak" class="experience-section">
-                    <p class="animated-text fade-in-up" data-i18n="squeak1">An anonymous experiment and a quiet connection.</p>
-                    <p class="animated-text fade-in-up delay-1" data-i18n="squeak2">You write for a stranger. You read another.</p>
-                    <p class="animated-text fade-in-up delay-2" data-i18n="squeak3">And at the end of the month, a quiet farewell.</p>
-                    <div class="down-arrow">
-                        <a href="#cta"><svg width="28" height="32" viewBox="0 0 100 100" style="display: block;"><path d="M50 20 Q 48 50, 50 80" stroke="currentColor" stroke-width="8" fill="none" stroke-linecap="round" /><path d="M38 68 L 50 80 L 62 68" stroke="currentColor" stroke-width="8" fill="none" stroke-linecap="round" stroke-linejoin="round" /></svg></a>
-                    </div>
-                </section>
-        
-                <section id="cta" class="experience-section">
-                    <p class="animated-text" data-i18n-html="cta1">Find your first connection. <br> Start sharing your journey.</p>
-                    <div class="store-buttons">
-                        <a href="#" class="store-button">App Store</a>
-                        <a href="#" class="store-button">Google Play</a>
-                    </div>
-                    <div class="social-links">
-                        <a href="https://x.com/Squeak_jounrnal" target="_blank" rel="noopener noreferrer" title="Twitter">
-                            <img src="twitter.png" alt="Twitter" width="24" height="24">
-                        </a>
-                        <a href="#" title="TikTok - Coming Soon" style="opacity: 0.5; cursor: not-allowed;">
-                            <img src="tiktok.png" alt="TikTok" width="24" height="24">
-                        </a>
-                    </div>
-                    <footer class="footer-note">
-                        <div style="display: flex; align-items: center; gap: 10px;">
-                            <span data-i18n="uniqueVisitors">Unique visitors:</span>
-                            <span id="visitors-count" aria-label="Visitor count">…</span>
-                            <span data-i18n="thankYou">| Thank you for checking out the project.</span>
-                        </div>
-                    </footer>
-                </section>
-                        </main>
-                    
-                        <script>
-                            document.addEventListener('DOMContentLoaded', () => {
-                                // Keep your Intersection Observer for the scroll animations!
-                                const sections = document.querySelectorAll('.experience-section');
-                                const observer = new IntersectionObserver((entries) => {
-                                    entries.forEach(entry => {
-                                        if (entry.isIntersecting) {
-                                            entry.target.classList.add('visible');
-                                        }
-                                    });
-                                }, {
-                                    rootMargin: '0px',
-                                    threshold: 0.5 
-                                });
-                                
-                                sections.forEach(section => {
-                                    observer.observe(section);
-                                });
 
-                                // Basic i18n for the landing page.
-                                const translations = {
-                                    en: {
-                                        title: 'Squeak',
-                                        subtitle: 'Your secret diary. Shared with a stranger.',
-                                        appStore: 'App Store',
-                                        googlePlay: 'Google Play',
-                                        loneliness1: "Sometimes it feels like you're speaking into a void...",
-                                        loneliness2: '...and the echo is just your own voice.',
-                                        connection1: 'But we all have a need to be heard.',
-                                        connection2: 'To be seen. To connect...',
-                                        squeak1: 'An anonymous experiment and a quiet connection.',
-                                        squeak2: 'You write for a stranger. You read another.',
-                                        squeak3: 'And at the end of the month, a quiet farewell.',
-                                        cta1: 'Find your first connection.<br>Start sharing your journey.',
-                                        uniqueVisitors: 'Unique visitors:',
-                                        thankYou: '| Thank you for checking out the project.',
-                                    },
-                                    fr: {
-                                        subtitle: 'Votre journal secret. Partagé avec un inconnu.',
-                                        loneliness1: "Parfois, on a l'impression de parler dans le vide...",
-                                        loneliness2: "...et l'écho n'est que sa propre voix.",
-                                        connection1: 'Mais nous avons tous besoin d’être entendus.',
-                                        connection2: 'D’être vus. De se connecter...',
-                                        squeak1: 'Une expérience anonyme et une connexion silencieuse.',
-                                        squeak2: 'Vous écrivez pour un étranger. Vous lisez un autre.',
-                                        squeak3: 'Et à la fin du mois, un au revoir discret.',
-                                        cta1: 'Trouvez votre première connexion.<br>Commencez à partager votre parcours.',
-                                        uniqueVisitors: 'Visiteurs uniques :',
-                                        thankYou: '| Merci d’avoir consulté le projet.',
-                                    },
-                                    it: {
-                                        subtitle: 'Il tuo diario segreto. Condiviso con uno sconosciuto.',
-                                        loneliness1: 'A volte sembra di parlare nel vuoto...',
-                                        loneliness2: '...e l’eco è solo la tua stessa voce.',
-                                        connection1: 'Ma tutti abbiamo bisogno di essere ascoltati.',
-                                        connection2: 'Di essere visti. Di connetterci...',
-                                        squeak1: 'Un esperimento anonimo e una connessione silenziosa.',
-                                        squeak2: 'Scrivi per uno sconosciuto. Leggi un altro.',
-                                        squeak3: 'E alla fine del mese, un saluto tranquillo.',
-                                        cta1: 'Trova la tua prima connessione.<br>Inizia a condividere il tuo viaggio.',
-                                        uniqueVisitors: 'Visitatori unici:',
-                                        thankYou: '| Grazie per aver visitato il progetto.',
-                                    },
-                                    de: {
-                                        subtitle: 'Dein geheimes Tagebuch. Geteilt mit einem Fremden.',
-                                        loneliness1: 'Manchmal fühlt es sich an, als würdest du in ein Nichts sprechen...',
-                                        loneliness2: '...und das Echo ist nur deine eigene Stimme.',
-                                        connection1: 'Aber wir alle haben das Bedürfnis, gehört zu werden.',
-                                        connection2: 'Gesehen zu werden. Sich zu verbinden...',
-                                        squeak1: 'Ein anonymes Experiment und eine leise Verbindung.',
-                                        squeak2: 'Du schreibst für einen Fremden. Du liest einen anderen.',
-                                        squeak3: 'Und am Ende des Monats, ein leises Lebewohl.',
-                                        cta1: 'Finde deine erste Verbindung.<br>Beginne, deine Reise zu teilen.',
-                                        uniqueVisitors: 'Einzigartige Besucher:',
-                                        thankYou: '| Danke, dass du dir das Projekt ansiehst.',
-                                    },
-                                    es: {
-                                        subtitle: 'Tu diario secreto. Compartido con un extraño.',
-                                        loneliness1: 'A veces sientes que hablas en el vacío...',
-                                        loneliness2: '...y el eco es solo tu propia voz.',
-                                        connection1: 'Pero todos tenemos la necesidad de ser escuchados.',
-                                        connection2: 'De ser vistos. De conectar...',
-                                        squeak1: 'Un experimento anónimo y una conexión tranquila.',
-                                        squeak2: 'Escribes para un extraño. Lees a otro.',
-                                        squeak3: 'Y al final del mes, una despedida silenciosa.',
-                                        cta1: 'Encuentra tu primera conexión.<br>Empieza a compartir tu viaje.',
-                                        uniqueVisitors: 'Visitantes únicos:',
-                                        thankYou: '| Gracias por visitar el proyecto.',
-                                    },
-                                    zh: {
-                                        subtitle: '你的秘密日记。与陌生人分享。',
-                                        loneliness1: '有时候感觉你在对着虚无说话...',
-                                        loneliness2: '...回声只是你自己的声音。',
-                                        connection1: '但我们都需要被听见。',
-                                        connection2: '被看见。被连接...',
-                                        squeak1: '一个匿名的实验和一次安静的连接。',
-                                        squeak2: '你为陌生人写。你读另一个人。',
-                                        squeak3: '在月底，一个安静的告别。',
-                                        cta1: '找到你的第一个连接。<br>开始分享你的旅程。',
-                                        uniqueVisitors: '独立访客：',
-                                        thankYou: '| 感谢你查看该项目。',
-                                    },
-                                    hi: {
-                                        subtitle: 'आपकी गुप्त डायरी। एक अजनबी के साथ साझा की गई।',
-                                        loneliness1: 'कभी-कभी ऐसा लगता है कि आप शून्यता में बोल रहे हैं...',
-                                        loneliness2: '...और प्रतिध्वनि सिर्फ आपकी अपनी आवाज़ है।',
-                                        connection1: 'लेकिन हम सभी को सुना जाना चाहिए।',
-                                        connection2: 'देखे जाना। जुड़ना...',
-                                        squeak1: 'एक गुमनाम प्रयोग और एक शांत कनेक्शन।',
-                                        squeak2: 'आप एक अजनबी के लिए लिखते हैं। आप दूसरे को पढ़ते हैं।',
-                                        squeak3: 'और महीने के अंत में, एक शांत अलविदा।',
-                                        cta1: 'अपना पहला कनेक्शन खोजें।<br>अपनी यात्रा साझा करना शुरू करें।',
-                                        uniqueVisitors: 'विशिष्ट आगंतुक:',
-                                        thankYou: '| परियोजना को देखने के लिए धन्यवाद।',
-                                    },
-                                    ar: {
-                                        subtitle: 'يومياتك السرية. مشتركة مع شخص غريب.',
-                                        loneliness1: 'أحيانًا يبدو أنك تتحدث إلى فراغ...',
-                                        loneliness2: '...والصدى هو فقط صوتك الخاص.',
-                                        connection1: 'لكننا جميعًا بحاجة لأن نُسمع.',
-                                        connection2: 'أن يُرى. أن نتواصل...',
-                                        squeak1: 'تجربة مجهولة واتصال هادئ.',
-                                        squeak2: 'تكتب لشخص غريب. تقرأ آخر.',
-                                        squeak3: 'وفي نهاية الشهر، وداع هادئ.',
-                                        cta1: 'ابحث عن اتصالك الأول.<br>ابدأ مشاركة رحلتك.',
-                                        uniqueVisitors: 'زوار فريدون:',
-                                        thankYou: '| شكرًا لزيارة المشروع.',
-                                    },
-                                    ja: {
-                                        subtitle: 'あなたの秘密の日記。見知らぬ人と共有します。',
-                                        loneliness1: '時々、自分が空白に語りかけているように感じる…',
-                                        loneliness2: '…そしてこだまはただ自分の声だけです。',
-                                        connection1: 'でも、誰もが聞いてもらいたいと思っています。',
-                                        connection2: '見られること。つながること...',
-                                        squeak1: '匿名の実験と静かなつながり。',
-                                        squeak2: 'あなたは見知らぬ人に書きます。別の人を読みます。',
-                                        squeak3: 'そして月の終わりに、静かな別れ。',
-                                        cta1: '最初のつながりを見つけましょう。<br>旅を共有し始めましょう。',
-                                        uniqueVisitors: 'ユニーク訪問者：',
-                                        thankYou: '| プロジェクトをご覧いただきありがとうございます。',
-                                    },
-                                    ko: {
-                                        subtitle: '당신의 비밀 다이어리. 낯선 사람과 공유됩니다.',
-                                        loneliness1: '때로는 당신이 공허에 말을 걸고 있는 것처럼 느껴져요...',
-                                        loneliness2: '...그리고 메아리는 당신 자신의 목소리일 뿐이에요.',
-                                        connection1: '하지만 우리 모두는 들려질 필요가 있어요.',
-                                        connection2: '보여지는 것. 연결되는 것...',
-                                        squeak1: '익명의 실험과 조용한 연결.',
-                                        squeak2: '당신은 낯선 사람을 위해 씁니다. 다른 사람을 읽습니다.',
-                                        squeak3: '그리고 한 달이 끝날 때, 조용한 작별.',
-                                        cta1: '첫 연결을 찾아보세요.<br>여정을 공유하기 시작하세요.',
-                                        uniqueVisitors: '고유 방문자:',
-                                        thankYou: '| 프로젝트를 확인해 주셔서 감사합니다.',
-                                    },
-                                };
+        /* ── Responsive: Small phones (≤ 480px) ── */
+        @media (max-width: 480px) {
+            html {
+                scroll-snap-type: none; /* disable snap on tiny screens — let it free-scroll */
+            }
 
-                                const getPreferredLang = () => {
-                                    const raw = (navigator.language || navigator.userLanguage || 'en').slice(0, 2).toLowerCase();
-                                    return translations[raw] ? raw : 'en';
-                                };
+            body::before {
+                display: none;
+            }
 
-                                const applyTranslations = (lang) => {
-                                    const t = translations[lang] || translations.en;
-                                    document.querySelectorAll('[data-i18n]').forEach(el => {
-                                        const key = el.getAttribute('data-i18n');
-                                        if (!key) return;
-                                        if (t[key]) el.textContent = t[key];
-                                    });
-                                    document.querySelectorAll('[data-i18n-html]').forEach(el => {
-                                        const key = el.getAttribute('data-i18n-html');
-                                        if (!key) return;
-                                        if (t[key]) el.innerHTML = t[key];
-                                    });
-                                };
+            .experience-section {
+                min-height: 100svh; /* safe-area aware height */
+                padding: 48px 20px 72px;
+                justify-content: flex-start;
+                padding-top: max(48px, env(safe-area-inset-top, 48px));
+            }
 
-                                applyTranslations(getPreferredLang());
+            /* Re-center sections that don't have much content */
+            #loneliness,
+            #squeak {
+                justify-content: center;
+                padding-top: 48px;
+            }
 
-                                // Visitor counter (unique per browser) using countapi.xyz.
-                                // First visit increments the shared counter; subsequent visits just fetch the latest value.
-                                const visitorStorageKey = 'squeak-visitor-counted';
-                                const countApiNamespace = 'squeak-site';
-                                const countApiKey = 'unique-visitors';
-                                const countEl = document.getElementById('visitors-count');
+            #hero {
+                justify-content: center;
+                gap: 12px;
+                padding-top: 48px;
+            }
 
-                                const setCountText = (value) => {
-                                    if (!countEl) return;
-                                    countEl.textContent = value != null ? value.toLocaleString() : '—';
-                                };
+            #hero .mascot {
+                height: 140px;
+                order: -1; /* mascot above text on very small screens */
+            }
 
-                                const fetchCount = () => {
-                                    return fetch(`https://api.countapi.xyz/get/${countApiNamespace}/${countApiKey}`)
-                                        .then(res => res.json())
-                                        .then(json => {
-                                            if (typeof json.value === 'number') {
-                                                setCountText(json.value);
-                                            }
-                                        })
-                                        .catch(() => setCountText('—'));
-                                };
+            #hero .title {
+                font-size: 40px;
+            }
 
-                                if (localStorage.getItem(visitorStorageKey)) {
-                                    fetchCount();
-                                } else {
-                                    fetch(`https://api.countapi.xyz/hit/${countApiNamespace}/${countApiKey}`)
-                                        .then(res => res.json())
-                                        .then(json => {
-                                            if (typeof json.value === 'number') {
-                                                setCountText(json.value);
-                                                localStorage.setItem(visitorStorageKey, '1');
-                                            } else {
-                                                fetchCount();
-                                            }
-                                        })
-                                        .catch(() => fetchCount());
-                                }
-                            });
-                        </script>
-                    
-                    </body>
-                    </html>
+            #hero .subtitle {
+                font-size: 16px;
+            }
+
+            #hero .store-buttons {
+                margin-top: 4px;
+            }
+
+            .animated-text {
+                font-size: 20px;
+                max-width: 100%;
+                margin: 0.2em 0;
+            }
+
+            .store-button {
+                font-size: 15px;
+                padding: 10px 20px;
+                max-width: 240px;
+            }
+
+            /* Connection section: shrink diagram so it all fits */
+            #connection {
+                padding-bottom: 72px;
+            }
+            .diagram-container {
+                width: 160px;
+                height: 150px;
+                margin: 16px 0;
+            }
+            .ring {
+                width: 130px;
+                height: 130px;
+            }
+            .node {
+                width: 40px;
+                height: 40px;
+                font-size: 14px;
+            }
+            .node-a { top: calc(50% - 65px - 20px); left: calc(50% - 20px); }
+            .node-b { top: calc(50% + 32px - 20px); left: calc(50% - 56px - 20px); }
+            .node-c { top: calc(50% + 32px - 20px); left: calc(50% + 56px - 20px); }
+
+            .circle-labels {
+                font-size: 15px;
+                line-height: 1.7;
+            }
+
+            /* CTA: stack everything neatly */
+            #cta {
+                padding-bottom: calc(var(--spacing-unit) * 3);
+                justify-content: center;
+                gap: 12px;
+            }
+
+            .down-arrow {
+                bottom: 10px;
+            }
+            .down-arrow a svg {
+                width: 22px;
+                height: 26px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <main>
+
+        <!-- ── Hero ── -->
+        <section id="hero" class="experience-section">
+            <div class="hero-content">
+                <h1 class="title" data-i18n="title">Squeak</h1>
+                <p class="subtitle" data-i18n="subtitle">Your secret diary. Shared with a stranger.</p>
+                <div class="store-buttons">
+                    <a href="#" class="store-button" data-i18n="appStore">App Store</a>
+                    <a href="#" class="store-button" data-i18n="googlePlay">Google Play</a>
+                </div>
+            </div>
+            <img src="mascotte.png" alt="Squeak Mascot" class="mascot">
+            <div class="down-arrow">
+                <a href="#loneliness" aria-label="Scroll to next section">
+                    <svg width="28" height="32" viewBox="0 0 100 100" aria-hidden="true" style="display:block"><path d="M50 20 Q 48 50, 50 80" stroke="currentColor" stroke-width="8" fill="none" stroke-linecap="round"/><path d="M38 68 L 50 80 L 62 68" stroke="currentColor" stroke-width="8" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                </a>
+            </div>
+        </section>
+
+        <!-- ── Loneliness ── -->
+        <section id="loneliness" class="experience-section dark">
+            <p class="animated-text fade-in-up" data-i18n="loneliness1">Sometimes it feels like you're speaking into a void...</p>
+            <p class="animated-text fade-in-up delay-1" data-i18n="loneliness2">...and the echo is just your own voice.</p>
+            <div class="down-arrow">
+                <a href="#connection" aria-label="Scroll to next section">
+                    <svg width="28" height="32" viewBox="0 0 100 100" aria-hidden="true" style="display:block"><path d="M50 20 Q 48 50, 50 80" stroke="currentColor" stroke-width="8" fill="none" stroke-linecap="round"/><path d="M38 68 L 50 80 L 62 68" stroke="currentColor" stroke-width="8" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                </a>
+            </div>
+        </section>
+
+        <!-- ── Connection ── -->
+        <section id="connection" class="experience-section dark">
+            <p class="animated-text fade-in-up" data-i18n="connection1">But we all have a need to be heard.</p>
+            <p class="animated-text fade-in-up delay-1" data-i18n="connection2">To be seen. To connect...</p>
+            <div class="diagram-container fade-in-up delay-1">
+                <div class="ring"></div>
+                <div class="node node-a">A</div>
+                <div class="node node-b">B</div>
+                <div class="node node-c">C</div>
+            </div>
+            <div class="circle-labels fade-in-up delay-2">
+                <p class="line-1" data-i18n-html="circleLabel1"><span class="letter">A</span> writes for B</p>
+                <p class="line-2" data-i18n-html="circleLabel2"><span class="letter">B</span> writes for C</p>
+                <p class="line-3" data-i18n-html="circleLabel3"><span class="letter">C</span> writes for A</p>
+            </div>
+            <div class="down-arrow">
+                <a href="#squeak" aria-label="Scroll to next section">
+                    <svg width="28" height="32" viewBox="0 0 100 100" aria-hidden="true" style="display:block"><path d="M50 20 Q 48 50, 50 80" stroke="currentColor" stroke-width="8" fill="none" stroke-linecap="round"/><path d="M38 68 L 50 80 L 62 68" stroke="currentColor" stroke-width="8" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                </a>
+            </div>
+        </section>
+
+        <!-- ── Squeak ── -->
+        <section id="squeak" class="experience-section">
+            <p class="animated-text fade-in-up" data-i18n="squeak1">An anonymous experiment and a quiet connection.</p>
+            <p class="animated-text fade-in-up delay-1" data-i18n="squeak2">You write for a stranger. You read another.</p>
+            <p class="animated-text fade-in-up delay-2" data-i18n="squeak3">And at the end of the month, a quiet farewell.</p>
+            <div class="down-arrow">
+                <a href="#cta" aria-label="Scroll to next section">
+                    <svg width="28" height="32" viewBox="0 0 100 100" aria-hidden="true" style="display:block"><path d="M50 20 Q 48 50, 50 80" stroke="currentColor" stroke-width="8" fill="none" stroke-linecap="round"/><path d="M38 68 L 50 80 L 62 68" stroke="currentColor" stroke-width="8" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                </a>
+            </div>
+        </section>
+
+        <!-- ── CTA ── -->
+        <section id="cta" class="experience-section">
+            <p class="animated-text" data-i18n-html="cta1">Find your first connection.<br>Start sharing your journey.</p>
+            <div class="store-buttons">
+                <a href="#" class="store-button" data-i18n="appStore">App Store</a>
+                <a href="#" class="store-button" data-i18n="googlePlay">Google Play</a>
+            </div>
+            <div class="social-links">
+                <a href="https://x.com/Squeak_jounrnal" target="_blank" rel="noopener noreferrer" title="Twitter / X" aria-label="Follow Squeak on Twitter">
+                    <img src="twitter.png" alt="Twitter" width="24" height="24">
+                </a>
+                <a href="#" title="TikTok — Coming Soon" aria-label="TikTok (coming soon)" style="opacity:0.4; cursor:not-allowed;" tabindex="-1">
+                    <img src="tiktok.png" alt="TikTok" width="24" height="24">
+                </a>
+            </div>
+            <footer class="footer-note">
+                <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap; justify-content:center;">
+                    <span data-i18n="uniqueVisitors">Unique visitors:</span>
+                    <span id="visitors-count" aria-label="Visitor count">…</span>
+                    <span data-i18n="thankYou">| Thank you for checking out the project.</span>
+                </div>
+            </footer>
+        </section>
+
+    </main>
+
+    <script>
+    document.addEventListener('DOMContentLoaded', () => {
+
+        // ── Scroll-triggered animations ──
+        const sections = document.querySelectorAll('.experience-section');
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) entry.target.classList.add('visible');
+            });
+        }, { rootMargin: '0px', threshold: 0.4 });
+        sections.forEach(s => observer.observe(s));
+
+        // ── Translations ──
+        const translations = {
+            en: {
+                title:          'Squeak',
+                subtitle:       'Your secret diary. Shared with a stranger.',
+                appStore:       'App Store',
+                googlePlay:     'Google Play',
+                loneliness1:    "Sometimes it feels like you're speaking into a void...",
+                loneliness2:    '...and the echo is just your own voice.',
+                connection1:    'But we all have a need to be heard.',
+                connection2:    'To be seen. To connect...',
+                circleLabel1:   '<span class="letter">A</span> writes for B',
+                circleLabel2:   '<span class="letter">B</span> writes for C',
+                circleLabel3:   '<span class="letter">C</span> writes for A',
+                squeak1:        'An anonymous experiment and a quiet connection.',
+                squeak2:        'You write for a stranger. You read another.',
+                squeak3:        'And at the end of the month, a quiet farewell.',
+                cta1:           'Find your first connection.<br>Start sharing your journey.',
+                uniqueVisitors: 'Unique visitors:',
+                thankYou:       '| Thank you for checking out the project.',
+            },
+            fr: {
+                subtitle:       'Votre journal secret. Partagé avec un inconnu.',
+                loneliness1:    "Parfois, on a l'impression de parler dans le vide...",
+                loneliness2:    "...et l'écho n'est que sa propre voix.",
+                connection1:    'Mais nous avons tous besoin d\u2019être entendus.',
+                connection2:    'D\u2019être vus. De se connecter\u2026',
+                circleLabel1:   '<span class="letter">A</span> écrit pour B',
+                circleLabel2:   '<span class="letter">B</span> écrit pour C',
+                circleLabel3:   '<span class="letter">C</span> écrit pour A',
+                squeak1:        'Une expérience anonyme et une connexion silencieuse.',
+                squeak2:        'Vous écrivez pour un étranger. Vous lisez un autre.',
+                squeak3:        'Et à la fin du mois, un au revoir discret.',
+                cta1:           'Trouvez votre première connexion.<br>Commencez à partager votre parcours.',
+                uniqueVisitors: 'Visiteurs uniques :',
+                thankYou:       '| Merci d\u2019avoir consulté le projet.',
+            },
+            it: {
+                subtitle:       'Il tuo diario segreto. Condiviso con uno sconosciuto.',
+                loneliness1:    'A volte sembra di parlare nel vuoto...',
+                loneliness2:    '...e l\u2019eco è solo la tua stessa voce.',
+                connection1:    'Ma tutti abbiamo bisogno di essere ascoltati.',
+                connection2:    'Di essere visti. Di connetterci...',
+                circleLabel1:   '<span class="letter">A</span> scrive per B',
+                circleLabel2:   '<span class="letter">B</span> scrive per C',
+                circleLabel3:   '<span class="letter">C</span> scrive per A',
+                squeak1:        'Un esperimento anonimo e una connessione silenziosa.',
+                squeak2:        'Scrivi per uno sconosciuto. Ne leggi un altro.',
+                squeak3:        'E alla fine del mese, un saluto tranquillo.',
+                cta1:           'Trova la tua prima connessione.<br>Inizia a condividere il tuo viaggio.',
+                uniqueVisitors: 'Visitatori unici:',
+                thankYou:       '| Grazie per aver visitato il progetto.',
+            },
+            de: {
+                subtitle:       'Dein geheimes Tagebuch. Geteilt mit einem Fremden.',
+                loneliness1:    'Manchmal fühlt es sich an, als würdest du in ein Nichts sprechen...',
+                loneliness2:    '...und das Echo ist nur deine eigene Stimme.',
+                connection1:    'Aber wir alle haben das Bedürfnis, gehört zu werden.',
+                connection2:    'Gesehen zu werden. Sich zu verbinden...',
+                circleLabel1:   '<span class="letter">A</span> schreibt für B',
+                circleLabel2:   '<span class="letter">B</span> schreibt für C',
+                circleLabel3:   '<span class="letter">C</span> schreibt für A',
+                squeak1:        'Ein anonymes Experiment und eine leise Verbindung.',
+                squeak2:        'Du schreibst für einen Fremden. Du liest einen anderen.',
+                squeak3:        'Und am Ende des Monats, ein leises Lebewohl.',
+                cta1:           'Finde deine erste Verbindung.<br>Beginne, deine Reise zu teilen.',
+                uniqueVisitors: 'Einzigartige Besucher:',
+                thankYou:       '| Danke, dass du dir das Projekt ansiehst.',
+            },
+            es: {
+                subtitle:       'Tu diario secreto. Compartido con un extraño.',
+                loneliness1:    'A veces sientes que hablas en el vacío...',
+                loneliness2:    '...y el eco es solo tu propia voz.',
+                connection1:    'Pero todos tenemos la necesidad de ser escuchados.',
+                connection2:    'De ser vistos. De conectar...',
+                circleLabel1:   '<span class="letter">A</span> escribe para B',
+                circleLabel2:   '<span class="letter">B</span> escribe para C',
+                circleLabel3:   '<span class="letter">C</span> escribe para A',
+                squeak1:        'Un experimento anónimo y una conexión tranquila.',
+                squeak2:        'Escribes para un extraño. Lees a otro.',
+                squeak3:        'Y al final del mes, una despedida silenciosa.',
+                cta1:           'Encuentra tu primera conexión.<br>Empieza a compartir tu viaje.',
+                uniqueVisitors: 'Visitantes únicos:',
+                thankYou:       '| Gracias por visitar el proyecto.',
+            },
+            zh: {
+                subtitle:       '你的秘密日记。与陌生人分享。',
+                loneliness1:    '有时候感觉你在对着虚无说话...',
+                loneliness2:    '...回声只是你自己的声音。',
+                connection1:    '但我们都需要被听见。',
+                connection2:    '被看见。被连接...',
+                circleLabel1:   '<span class="letter">A</span> 为 B 而写',
+                circleLabel2:   '<span class="letter">B</span> 为 C 而写',
+                circleLabel3:   '<span class="letter">C</span> 为 A 而写',
+                squeak1:        '一个匿名的实验和一次安静的连接。',
+                squeak2:        '你为陌生人写作。你阅读另一个人的故事。',
+                squeak3:        '在月底，一个安静的告别。',
+                cta1:           '找到你的第一个连接。<br>开始分享你的旅程。',
+                uniqueVisitors: '独立访客：',
+                thankYou:       '| 感谢你查看该项目。',
+            },
+            hi: {
+                subtitle:       'आपकी गुप्त डायरी। एक अजनबी के साथ साझा की गई।',
+                loneliness1:    'कभी-कभी ऐसा लगता है कि आप शून्यता में बोल रहे हैं...',
+                loneliness2:    '...और प्रतिध्वनि सिर्फ आपकी अपनी आवाज़ है।',
+                connection1:    'लेकिन हम सभी को सुना जाना चाहिए।',
+                connection2:    'देखे जाना। जुड़ना...',
+                circleLabel1:   '<span class="letter">A</span>, B के लिए लिखता है',
+                circleLabel2:   '<span class="letter">B</span>, C के लिए लिखता है',
+                circleLabel3:   '<span class="letter">C</span>, A के लिए लिखता है',
+                squeak1:        'एक गुमनाम प्रयोग और एक शांत कनेक्शन।',
+                squeak2:        'आप एक अजनबी के लिए लिखते हैं। आप दूसरे को पढ़ते हैं।',
+                squeak3:        'और महीने के अंत में, एक शांत अलविदा।',
+                cta1:           'अपना पहला कनेक्शन खोजें।<br>अपनी यात्रा साझा करना शुरू करें।',
+                uniqueVisitors: 'विशिष्ट आगंतुक:',
+                thankYou:       '| परियोजना को देखने के लिए धन्यवाद।',
+            },
+            ar: {
+                subtitle:       'يومياتك السرية. مشتركة مع شخص غريب.',
+                loneliness1:    'أحيانًا يبدو أنك تتحدث إلى فراغ...',
+                loneliness2:    '...والصدى هو فقط صوتك الخاص.',
+                connection1:    'لكننا جميعًا بحاجة لأن نُسمع.',
+                connection2:    'أن نُرى. أن نتواصل...',
+                circleLabel1:   '<span class="letter">A</span> يكتب لـ B',
+                circleLabel2:   '<span class="letter">B</span> يكتب لـ C',
+                circleLabel3:   '<span class="letter">C</span> يكتب لـ A',
+                squeak1:        'تجربة مجهولة واتصال هادئ.',
+                squeak2:        'تكتب لشخص غريب. تقرأ قصة شخص آخر.',
+                squeak3:        'وفي نهاية الشهر، وداع هادئ.',
+                cta1:           'ابحث عن اتصالك الأول.<br>ابدأ مشاركة رحلتك.',
+                uniqueVisitors: 'زوار فريدون:',
+                thankYou:       '| شكرًا لزيارة المشروع.',
+            },
+            ja: {
+                subtitle:       'あなたの秘密の日記。見知らぬ人と共有します。',
+                loneliness1:    '時々、自分が空白に語りかけているように感じる…',
+                loneliness2:    '…そしてこだまはただ自分の声だけです。',
+                connection1:    'でも、誰もが聞いてもらいたいと思っています。',
+                connection2:    '見られること。つながること...',
+                circleLabel1:   '<span class="letter">A</span> は B のために書く',
+                circleLabel2:   '<span class="letter">B</span> は C のために書く',
+                circleLabel3:   '<span class="letter">C</span> は A のために書く',
+                squeak1:        '匿名の実験と静かなつながり。',
+                squeak2:        'あなたは見知らぬ人に書きます。別の人の物語を読みます。',
+                squeak3:        'そして月の終わりに、静かな別れ。',
+                cta1:           '最初のつながりを見つけましょう。<br>旅を共有し始めましょう。',
+                uniqueVisitors: 'ユニーク訪問者：',
+                thankYou:       '| プロジェクトをご覧いただきありがとうございます。',
+            },
+            ko: {
+                subtitle:       '당신의 비밀 다이어리. 낯선 사람과 공유됩니다.',
+                loneliness1:    '때로는 당신이 공허에 말을 걸고 있는 것처럼 느껴져요...',
+                loneliness2:    '...그리고 메아리는 당신 자신의 목소리일 뿐이에요.',
+                connection1:    '하지만 우리 모두는 들려질 필요가 있어요.',
+                connection2:    '보여지는 것. 연결되는 것...',
+                circleLabel1:   '<span class="letter">A</span>는 B를 위해 씁니다',
+                circleLabel2:   '<span class="letter">B</span>는 C를 위해 씁니다',
+                circleLabel3:   '<span class="letter">C</span>는 A를 위해 씁니다',
+                squeak1:        '익명의 실험과 조용한 연결.',
+                squeak2:        '당신은 낯선 사람을 위해 씁니다. 다른 사람의 이야기를 읽습니다.',
+                squeak3:        '그리고 한 달이 끝날 때, 조용한 작별.',
+                cta1:           '첫 연결을 찾아보세요.<br>여정을 공유하기 시작하세요.',
+                uniqueVisitors: '고유 방문자:',
+                thankYou:       '| 프로젝트를 확인해 주셔서 감사합니다.',
+            },
+        };
+
+        const getPreferredLang = () => {
+            const raw = (navigator.language || navigator.userLanguage || 'en').slice(0, 2).toLowerCase();
+            return translations[raw] ? raw : 'en';
+        };
+
+        const applyTranslations = (lang) => {
+            // Merge English as base so missing keys always fall back correctly
+            const t = Object.assign({}, translations.en, translations[lang] || {});
+
+            document.querySelectorAll('[data-i18n]').forEach(el => {
+                const key = el.getAttribute('data-i18n');
+                if (key && t[key] !== undefined) el.textContent = t[key];
+            });
+            document.querySelectorAll('[data-i18n-html]').forEach(el => {
+                const key = el.getAttribute('data-i18n-html');
+                if (key && t[key] !== undefined) el.innerHTML = t[key];
+            });
+
+            // Update <html> lang and dir attributes
+            document.documentElement.setAttribute('lang', lang);
+            document.documentElement.setAttribute('dir', lang === 'ar' ? 'rtl' : 'ltr');
+        };
+
+        applyTranslations(getPreferredLang());
+
+        // ── Visitor counter (unique per browser) ──
+        // Uses counterapi.dev — a maintained replacement for the defunct countapi.xyz
+        const visitorStorageKey = 'squeak-visitor-v2';
+        const API = 'https://api.counterapi.dev/v1/squeakapp/visitors';
+        const countEl = document.getElementById('visitors-count');
+
+        const setCountText = (n) => {
+            if (!countEl) return;
+            countEl.textContent = (n != null && !isNaN(n)) ? Number(n).toLocaleString() : '—';
+        };
+
+        const fetchCount = () =>
+            fetch(API)
+                .then(r => { if (!r.ok) throw new Error(r.status); return r.json(); })
+                .then(j => setCountText(j.count))
+                .catch(() => setCountText('—'));
+
+        if (localStorage.getItem(visitorStorageKey)) {
+            fetchCount();
+        } else {
+            fetch(`${API}/up`)
+                .then(r => { if (!r.ok) throw new Error(r.status); return r.json(); })
+                .then(j => {
+                    if (typeof j.count === 'number') {
+                        setCountText(j.count);
+                        localStorage.setItem(visitorStorageKey, '1');
+                    } else {
+                        fetchCount();
+                    }
+                })
+                .catch(() => fetchCount());
+        }
+
+    });
+    </script>
+
+</body>
+</html>

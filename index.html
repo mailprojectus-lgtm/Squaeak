@@ -447,6 +447,7 @@
 
             /* Re-center sections that don't have much content */
             #loneliness,
+            #connection,
             #squeak {
                 justify-content: center;
                 padding-top: 48px;
@@ -514,11 +515,40 @@
                 line-height: 1.7;
             }
 
-            /* CTA: stack everything neatly */
+            /* CTA: main content centered, social + counter pinned to bottom */
             #cta {
-                padding-bottom: calc(var(--spacing-unit) * 3);
                 justify-content: center;
-                gap: 12px;
+                gap: 14px;
+                padding-bottom: 100px; /* room for the pinned bottom strip */
+            }
+
+            #cta .social-links {
+                position: absolute;
+                bottom: 44px;
+                left: 50%;
+                transform: translateX(-50%);
+                right: auto;
+                margin-top: 0;
+                gap: 14px;
+            }
+
+            #cta .social-links a {
+                width: 32px;
+                height: 32px;
+            }
+
+            #cta .social-links a img {
+                width: 18px;
+                height: 18px;
+            }
+
+            #cta .footer-note {
+                position: absolute;
+                bottom: 16px;
+                left: 50%;
+                transform: translateX(-50%);
+                padding: 0;
+                white-space: nowrap;
             }
 
             .down-arrow {

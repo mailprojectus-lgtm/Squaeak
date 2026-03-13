@@ -400,25 +400,35 @@
                 margin: calc(var(--spacing-unit) * 3) 0;
             }
 
-            /* CTA section: social links + footer flow inline */
+            /* CTA: keep social + footer pinned to bottom on all mobile sizes */
             #cta {
                 padding-bottom: calc(var(--spacing-unit) * 4);
                 gap: calc(var(--spacing-unit) * 2);
             }
 
-            .footer-note {
-                position: static;
-                padding: calc(var(--spacing-unit) * 2) 0 0;
-                gap: 8px;
-                flex-wrap: wrap;
+            .social-links {
+                position: absolute;
+                bottom: 50px;
+                left: 50%;
+                transform: translateX(-50%);
+                right: auto;
                 justify-content: center;
-                white-space: normal;
+                gap: 16px;
             }
 
-            .social-links {
-                position: static;
-                margin-top: calc(var(--spacing-unit) * 2);
-                justify-content: center;
+            .footer-note {
+                position: absolute;
+                bottom: 16px;
+                left: 16px;
+                right: 16px;
+                transform: none;
+                padding: 0;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                text-align: center;
+                font-size: 11px;
+                gap: 6px;
             }
 
             .down-arrow {
@@ -563,9 +573,61 @@
                 height: 26px;
             }
         }
+
+        /* ── Landscape lock overlay (phones only) ── */
+        #rotate-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            z-index: 99999;
+            background-color: var(--background-dark);
+            color: var(--ink-dark);
+            font-family: var(--handwritten-font);
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 24px;
+            text-align: center;
+            padding: 32px;
+        }
+
+        #rotate-overlay svg {
+            width: 52px;
+            height: 52px;
+            opacity: 0.7;
+            animation: rotate-hint 2.5s ease-in-out infinite;
+        }
+
+        #rotate-overlay p {
+            font-size: 22px;
+            margin: 0;
+            opacity: 0.85;
+        }
+
+        @keyframes rotate-hint {
+            0%, 100% { transform: rotate(0deg); }
+            40%       { transform: rotate(90deg); }
+            60%       { transform: rotate(90deg); }
+        }
+
+        /* Show on phones held sideways — max-height catches landscape phones */
+        @media (orientation: landscape) and (max-height: 500px) {
+            #rotate-overlay { display: flex; }
+        }
     </style>
 </head>
 <body>
+
+    <!-- Landscape lock — shown automatically via CSS on small phones in landscape -->
+    <div id="rotate-overlay" aria-live="polite">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <rect x="4" y="2" width="16" height="20" rx="2"/>
+            <path d="M12 18h.01"/>
+            <path d="M2 12 C2 8, 6 4, 12 4" stroke-dasharray="2 2" opacity="0.4"/>
+            <path d="M10 2l2 2-2 2" opacity="0.4"/>
+        </svg>
+        <p data-i18n="rotateDevice">Please rotate your device</p>
+    </div>
 
     <main>
 
@@ -779,6 +841,7 @@
                 cta1:           'Find your first connection.<br>Start sharing your journey.',
                 uniqueVisitors: 'Unique visitors:',
                 thankYou:       '| Thank you for checking out the project.',
+                rotateDevice:   'Please rotate your device',
             },
             fr: {
                 subtitle:       'Votre journal secret. Partagé avec un inconnu.',
@@ -795,6 +858,7 @@
                 cta1:           'Trouvez votre première connexion.<br>Commencez à partager votre parcours.',
                 uniqueVisitors: 'Visiteurs uniques :',
                 thankYou:       '| Merci d\u2019avoir consulté le projet.',
+                rotateDevice:   'Veuillez tourner votre appareil',
             },
             it: {
                 subtitle:       'Il tuo diario segreto. Condiviso con uno sconosciuto.',
@@ -811,6 +875,7 @@
                 cta1:           'Trova la tua prima connessione.<br>Inizia a condividere il tuo viaggio.',
                 uniqueVisitors: 'Visitatori unici:',
                 thankYou:       '| Grazie per aver visitato il progetto.',
+                rotateDevice:   'Ruota il tuo dispositivo',
             },
             de: {
                 subtitle:       'Dein geheimes Tagebuch. Geteilt mit einem Fremden.',
@@ -827,6 +892,7 @@
                 cta1:           'Finde deine erste Verbindung.<br>Beginne, deine Reise zu teilen.',
                 uniqueVisitors: 'Einzigartige Besucher:',
                 thankYou:       '| Danke, dass du dir das Projekt ansiehst.',
+                rotateDevice:   'Bitte drehe dein Gerät',
             },
             es: {
                 subtitle:       'Tu diario secreto. Compartido con un extraño.',
@@ -843,6 +909,7 @@
                 cta1:           'Encuentra tu primera conexión.<br>Empieza a compartir tu viaje.',
                 uniqueVisitors: 'Visitantes únicos:',
                 thankYou:       '| Gracias por visitar el proyecto.',
+                rotateDevice:   'Por favor, gira tu dispositivo',
             },
             zh: {
                 subtitle:       '你的秘密日记。与陌生人分享。',
@@ -859,6 +926,7 @@
                 cta1:           '找到你的第一个连接。<br>开始分享你的旅程。',
                 uniqueVisitors: '独立访客：',
                 thankYou:       '| 感谢你查看该项目。',
+                rotateDevice:   '请将设备竖向放置',
             },
             hi: {
                 subtitle:       'आपकी गुप्त डायरी। एक अजनबी के साथ साझा की गई।',
@@ -875,6 +943,7 @@
                 cta1:           'अपना पहला कनेक्शन खोजें।<br>अपनी यात्रा साझा करना शुरू करें।',
                 uniqueVisitors: 'विशिष्ट आगंतुक:',
                 thankYou:       '| परियोजना को देखने के लिए धन्यवाद।',
+                rotateDevice:   'कृपया अपना डिवाइस घुमाएं',
             },
             ar: {
                 subtitle:       'يومياتك السرية. مشتركة مع شخص غريب.',
@@ -891,6 +960,7 @@
                 cta1:           'ابحث عن اتصالك الأول.<br>ابدأ مشاركة رحلتك.',
                 uniqueVisitors: 'زوار فريدون:',
                 thankYou:       '| شكرًا لزيارة المشروع.',
+                rotateDevice:   'يرجى تدوير جهازك',
             },
             ja: {
                 subtitle:       'あなたの秘密の日記。見知らぬ人と共有します。',
@@ -907,6 +977,7 @@
                 cta1:           '最初のつながりを見つけましょう。<br>旅を共有し始めましょう。',
                 uniqueVisitors: 'ユニーク訪問者：',
                 thankYou:       '| プロジェクトをご覧いただきありがとうございます。',
+                rotateDevice:   'デバイスを縦向きにしてください',
             },
             ko: {
                 subtitle:       '당신의 비밀 다이어리. 낯선 사람과 공유됩니다.',
@@ -923,6 +994,7 @@
                 cta1:           '첫 연결을 찾아보세요.<br>여정을 공유하기 시작하세요.',
                 uniqueVisitors: '고유 방문자:',
                 thankYou:       '| 프로젝트를 확인해 주셔서 감사합니다.',
+                rotateDevice:   '기기를 세로로 돌려주세요',
             },
         };
 

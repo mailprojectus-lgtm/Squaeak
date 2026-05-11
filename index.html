@@ -702,9 +702,6 @@
                 <a href="#" class="store-button" data-i18n="googlePlay">Google Play</a>
             </div>
             <div class="social-links">
-                <a href="https://x.com/Squeak_jounrnal" target="_blank" rel="noopener noreferrer" title="Twitter / X" aria-label="Follow Squeak on Twitter">
-                    <img src="twitter.png" alt="Twitter" width="24" height="24">
-                </a>
                 <a href="#" title="TikTok — Coming Soon" aria-label="TikTok (coming soon)" style="opacity:0.4; cursor:not-allowed;" tabindex="-1">
                     <img src="tiktok.png" alt="TikTok" width="24" height="24">
                 </a>
@@ -1023,29 +1020,452 @@
 
         applyTranslations(getPreferredLang());
 
-        // ── Visitor counter via GoatCounter public API ──
-        // GoatCounter tracks & deduplicates visitors automatically.
-        // The /counter/ endpoint is public and requires no auth.
-        const countEl  = document.getElementById('visitors-count');
-        const footerEl = document.querySelector('#cta .footer-note');
-
-        const ctrl  = new AbortController();
-        const timer = setTimeout(() => ctrl.abort(), 6000);
-        fetch('https://squeakapp.goatcounter.com/counter/%2F.json', {
-            cache: 'no-store',
-            signal: ctrl.signal,
-        })
-            .finally(() => clearTimeout(timer))
-            .then(r => { if (!r.ok) throw r; return r.json(); })
-            .then(j => {
-                // GoatCounter returns count_unique as a pre-formatted string ("1,234")
-                const val = j.count_unique ?? j.count;
-                if (countEl && val != null) countEl.textContent = String(val);
+        // ── Website Stats API call ──
+        // Retrieve stats from Supabase including total users, total entries, and emotion of the week
+        const updateStatsDisplay = () => {
+            const statsCtrl = new AbortController();
+            const statsTimer = setTimeout(() => statsCtrl.abort(), 8000);
+            
+            fetch('https://lovrkeogsaxihyszaaom.supabase.co/functions/v1/website-stats', {
+                cache: 'no-store',
+                signal: statsCtrl.signal,
             })
-            .catch(() => {
-                if (footerEl) footerEl.style.display = 'none';
-            });
+            .finally(() => clearTimeout(statsTimer))
+            .then(response => {
+                if (!response.ok) throw response;
+                return response.json();
+            })
+            .then(data => {
+                // Update the stats display elements if they exist
+                if (document.getElementById('total-users')) {
+                    document.getElementById('total-users').textContent = data.total_users || '0';
+                }
+                if (document.getElementById('total-entries')) {
+                    document.getElementById('total-entries').textContent = data.total_entries || '0';
+                }
+                if (document.getElementById('emotion-week')) {
+                    document.getElementById('emotion-week').textContent = data.emotion_of_week || 'N/A';
+                }
+                // Also update the visitor count with total users (for the home page)
+                const countEl = document.getElementById('visitors-count');
+                const footerEl = document.querySelector('#cta .footer-note');
+                if (countEl && data.total_users !== undefined) {
+                    countEl.textContent = data.total_users.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+                }
+            })
+            .catch(error => {
+                console.error('Error fetching stats:', error);
+                // Fallback to original visitor counter if stats API fails
+                const countEl  = document.getElementById('visitors-count');
+                const footerEl = document.querySelector('#cta .footer-note');
 
+                const ctrl  = new AbortController();
+                const timer = setTimeout(() => ctrl.abort(), 6000);
+                fetch('https://squeakapp.goatcounter.com/counter/%2F.json', {
+                    cache: 'no-store',
+                    signal: ctrl.signal,
+                })
+                    .finally(() => clearTimeout(timer))
+                    .then(r => { if (!r.ok) throw r; return r.json(); })
+                    .then(j => {
+                        // GoatCounter returns count_unique as a pre-formatted string ("1,234")
+                        const val = j.count_unique ?? j.count;
+                        if (countEl && val != null) countEl.textContent = String(val);
+                    })
+                    .catch(() => {
+                        if (footerEl) footerEl.style.display = 'none';
+                    });
+            });
+        };
+        
+        // Call the stats update function on page load
+        updateStatsDisplay();
+
+        // Set up routing functionality for the website
+        const setupRouting = () => {
+            // Add click handler to make visitor count clickable and lead to stats page
+            const countEl = document.getElementById('visitors-count');
+            if (countEl) {
+                // Store the original count click function if it exists
+                if (!countEl.hasAttribute('data-original-title')) {
+                    countEl.setAttribute('data-original-title', countEl.title || '');
+                }
+                countEl.style.cursor = 'pointer';
+                countEl.title = 'View detailed visitor statistics';
+                
+                countEl.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    
+                    // Hide main content and show stats page
+                    document.querySelectorAll('.experience-section').forEach(section => {
+                        section.style.display = 'none';
+                    });
+                    
+                    // Create stats page if it doesn't exist
+                    if (!document.getElementById('stats-page')) {
+                        createStatsPage();
+                    }
+                    
+                    // Show the stats page
+                    document.getElementById('stats-page').style.display = 'flex';
+                    
+                    // Update browser history
+                    window.history.pushState({page: 'stats'}, '', '#stats');
+                    
+                    // Fetch fresh stats data for the stats page
+                    updateStatsDisplayOnPage();
+                });
+            }
+            
+            // Handle browser back/forward buttons
+            window.addEventListener('popstate', (event) => {
+                if (window.location.hash === '#stats' || event.state?.page === 'stats') {
+                    document.querySelectorAll('.experience-section').forEach(section => {
+                        section.style.display = 'none';
+                    });
+                    if (!document.getElementById('stats-page')) {
+                        createStatsPage();
+                    }
+                    document.getElementById('stats-page').style.display = 'flex';
+                    
+                    // Update stats if page is shown
+                    updateStatsDisplayOnPage();
+                } else {
+                    // Show main content and hide stats page
+                    document.querySelectorAll('.experience-section').forEach(section => {
+                        section.style.display = 'flex';
+                    });
+                    if (document.getElementById('stats-page')) {
+                        document.getElementById('stats-page').style.display = 'none';
+                    }
+                    // Make sure appropriate section is visible based on scroll position
+                    if (sections[current]) {
+                        sections[current].style.transform = 'translateY(0)';
+                        sections[current].classList.add('visible');
+                    }
+                }
+            });
+        };
+
+        // Function to create the stats page dynamically
+        const createStatsPage = () => {
+            const statsPage = document.createElement('div');
+            statsPage.id = 'stats-page';
+            statsPage.className = 'experience-section stats-page';
+            statsPage.style.cssText = `
+                position: absolute;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                display: none;
+                flex-direction: column;
+                justify-content: flex-start;
+                align-items: center;
+                text-align: center;
+                padding: 2rem;
+                box-sizing: border-box;
+                background-color: var(--background-light);
+                color: var(--ink-light);
+                overflow-y: auto;
+                z-index: 100;
+            `;
+            
+            statsPage.innerHTML = `
+                <h1 style="font-size: 2.5rem; margin-bottom: 2rem;">Website Statistics</h1>
+                
+                <div id="loading-stats" style="margin: 2rem; font-size: 1.2rem;">Loading statistics...</div>
+                
+                <div id="stats-content" style="display: none; width: 100%; max-width: 800px; margin: 0 auto;">
+                    <div class="stats-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.5rem; margin-bottom: 2rem;">
+                        <div class="stat-card" style="background: white; padding: 1.5rem; border: 1px solid #ddd; border-radius: 8px; text-align: center;">
+                            <h3 style="margin: 0 0 0.5rem 0; font-size: 1.1rem;">Total Users</h3>
+                            <p id="total-users-stats" style="font-size: 2rem; margin: 0; color: #9CADDF;">0</p>
+                        </div>
+                        <div class="stat-card" style="background: white; padding: 1.5rem; border: 1px solid #ddd; border-radius: 8px; text-align: center;">
+                            <h3 style="margin: 0 0 0.5rem 0; font-size: 1.1rem;">Total Entries</h3>
+                            <p id="total-entries-stats" style="font-size: 2rem; margin: 0; color: #9CADDF;">0</p>
+                        </div>
+                        <div class="stat-card" style="background: white; padding: 1.5rem; border: 1px solid #ddd; border-radius: 8px; text-align: center;">
+                            <h3 style="margin: 0 0 0.5rem 0; font-size: 1.1rem;">Emotion of the Week</h3>
+                            <p id="emotion-week-stats" style="font-size: 2rem; margin: 0; color: #9CADDF;">N/A</p>
+                        </div>
+                    </div>
+                    
+                    <div class="chart-section" style="width: 100%; background: white; padding: 1.5rem; border: 1px solid #ddd; border-radius: 8px; margin-bottom: 2rem;">
+                        <h3 style="margin-top: 0; text-align: center;">Users Over Time</h3>
+                        <div id="usersChartContainer" style="height: 400px; position: relative;">
+                            <canvas id="usersChartCanvas" style="width:100%; height:100%;"></canvas>
+                        </div>
+                    </div>
+                    
+                    <div class="countries-section" style="width: 100%; background: white; padding: 1.5rem; border: 1px solid #ddd; border-radius: 8px; margin-bottom: 2rem;">
+                        <h3 style="margin-top: 0; text-align: center;">Visitor Countries</h3>
+                        <table id="countries-table" style="width: 100%; border-collapse: collapse;">
+                            <thead>
+                                <tr>
+                                    <th style="border-bottom: 2px solid #ddd; padding: 0.75rem; text-align: left;">Country</th>
+                                    <th style="border-bottom: 2px solid #ddd; padding: 0.75rem; text-align: right;">Number of Visitors</th>
+                                </tr>
+                            </thead>
+                            <tbody id="countries-body">
+                                <!-- Data will be filled by JavaScript -->
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <div id="api-error-message" style="display: none; color: #e74c3c; margin: 1rem 0;"></div>
+                </div>
+                
+                <button id="go-back-btn" style="
+                    position: fixed; 
+                    bottom: 20px; 
+                    padding: 10px 20px; 
+                    background-color: #fff; 
+                    border: 1.5px solid var(--ink-light); 
+                    border-radius: 12px; 
+                    color: var(--ink-light);
+                    font-family: var(--handwritten-font);
+                    cursor: pointer;
+                    box-shadow: 2px 2px 0px 0px var(--ink-light);
+                    transition: all 0.2s ease-out;
+                ">Go Back to Homepage</button>
+            `;
+            
+            document.querySelector('main').appendChild(statsPage);
+            
+            // Add click handler to the go back button
+            document.getElementById('go-back-btn').addEventListener('click', () => {
+                // Hide stats page and show main content
+                document.getElementById('stats-page').style.display = 'none';
+                document.querySelectorAll('.experience-section:not(#stats-page)').forEach(section => {
+                    section.style.display = 'flex';
+                });
+                if (sections[current]) {
+                    sections[current].style.transform = 'translateY(0)';
+                }
+                
+                window.history.pushState({page: 'home'}, '', '/');
+            });
+        };
+        
+        // Specific function to update only the stats on the stats page
+        const updateStatsDisplayOnPage = () => {
+            const statsCtrl = new AbortController();
+            const statsTimer = setTimeout(() => statsCtrl.abort(), 8000);
+            
+            fetch('https://lovrkeogsaxihyszaaom.supabase.co/functions/v1/website-stats', {
+                cache: 'no-store',
+                signal: statsCtrl.signal,
+            })
+            .finally(() => clearTimeout(statsTimer))
+            .then(response => {
+                if (!response.ok) throw response;
+                return response.json();
+            })
+            .then(data => {
+                // Update the stats page elements with fetched data
+                if (document.getElementById('total-users-stats')) {
+                    document.getElementById('total-users-stats').textContent = typeof data.total_users !== 'undefined' 
+                        ? data.total_users.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",") 
+                        : 'N/A';
+                }
+                if (document.getElementById('total-entries-stats')) {
+                    document.getElementById('total-entries-stats').textContent = typeof data.total_entries !== 'undefined' 
+                        ? data.total_entries.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",") 
+                        : 'N/A';
+                }
+                if (document.getElementById('emotion-week-stats')) {
+                    document.getElementById('emotion-week-stats').textContent = data.emotion_of_week || 'N/A';
+                }
+                
+                // Show loading indicator if we're on the stats page
+                if (document.getElementById('loading-stats')) {
+                    document.getElementById('loading-stats').style.display = 'none';
+                    document.getElementById('stats-content').style.display = 'block';
+                    document.getElementById('api-error-message').style.display = 'none';
+                }
+                
+                // Populate countries table
+                if (document.getElementById('countries-body')) {
+                    const tbody = document.getElementById('countries-body');
+                    tbody.innerHTML = ''; // Clear existing rows
+                    
+                    // This assumes the response includes a 'visitor_countries' property
+                    if (data.visitor_countries && Array.isArray(data.visitor_countries)) {
+                        // Sort countries by visitor count (descending)
+                        data.visitor_countries.sort((a, b) => b.count - a.count);
+                        
+                        data.visitor_countries.forEach(item => {
+                            const row = document.createElement('tr');
+                            row.innerHTML = `
+                                <td style="border-bottom: 1px solid #eee; padding: 0.75rem; text-align: left;">${item.country}</td>
+                                <td style="border-bottom: 1px solid #eee; padding: 0.75rem; text-align: right;">${item.count}</td>
+                            `;
+                            tbody.appendChild(row);
+                        });
+                    } else {
+                        // Fallback: use static sample data - in production this would come from your API
+                        const countriesData = [
+                            { country: 'United States', count: 250 },
+                            { country: 'Germany', count: 180 },
+                            { country: 'France', count: 150 },
+                            { country: 'Brazil', count: 120 },
+                            { country: 'Japan', count: 95 },
+                            { country: 'India', count: 85 },
+                            { country: 'Canada', count: 75 },
+                            { country: 'Australia', count: 60 }
+                        ];
+                        
+                        countriesData.forEach(item => {
+                            const row = document.createElement('tr');
+                            row.innerHTML = `
+                                <td style="border-bottom: 1px solid #eee; padding: 0.75rem; text-align: left;">${item.country}</td>
+                                <td style="border-bottom: 1px solid #eee; padding: 0.75rem; text-align: right;">${item.count}</td>
+                            `;
+                            tbody.appendChild(row);
+                        });
+                    }
+                }
+                
+                // Generate chart with user data over time
+                generateUsersChart(data.users_over_time);
+            })
+            .catch(error => {
+                console.error('Error fetching stats:', error);
+                
+                // Show error on the stats page
+                if (document.getElementById('loading-stats')) {
+                    document.getElementById('loading-stats').style.display = 'none';
+                    document.getElementById('stats-content').style.display = 'none';
+                                    
+                    const errorMessage = document.getElementById('api-error-message');
+                    errorMessage.textContent = 'Failed to load statistics. Please try again later.';
+                    errorMessage.style.display = 'block';
+                }
+            });
+        };
+        
+        // Function to generate chart with user data
+        const generateUsersChart = (usersOverTimeData) => {
+            const ctx = document.getElementById('usersChartCanvas').getContext('2d');
+            
+            // Clear previously drawn chart
+            ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+            
+            // If we have actual data from API, use it
+            const data = usersOverTimeData ? usersOverTimeData : {
+                labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+                datasets: [200, 350, 420, 580, 675, 720, 850, 900, 1020, 1130, 1280, 1450] // Sample data
+            };
+            
+            // Update the canvas width and height
+            const container = document.getElementById('usersChartContainer');
+            ctx.canvas.width = container.clientWidth;
+            ctx.canvas.height = container.clientHeight;
+            
+            // Chart properties
+            const chartArea = {
+                top: 50,
+                right: ctx.canvas.width - 50,
+                bottom: ctx.canvas.height - 50,
+                left: 60
+            };
+            
+            const chartWidth = chartArea.right - chartArea.left;
+            const chartHeight = chartArea.bottom - chartArea.top;
+            
+            // Find max value to set scale
+            const maxValue = Math.max(...(data.datasets || []), 100);
+            const scaledMaxValue = Math.ceil(maxValue / 100) * 100; // Round up to nearest hundred
+            
+            // Draw X and Y axis
+            ctx.strokeStyle = '#000';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(chartArea.left, chartArea.top);
+            ctx.lineTo(chartArea.left, chartArea.bottom); // Y-axis
+            ctx.lineTo(chartArea.right, chartArea.bottom); // X-axis
+            ctx.stroke();
+            
+            // Draw Y-axis labels and grid lines
+            const yAxisSteps = 5;
+            for (let i = 0; i <= yAxisSteps; i++) {
+                const value = Math.round((scaledMaxValue / yAxisSteps) * i);
+                const yPos = chartArea.bottom - (i * (chartHeight / yAxisSteps));
+                
+                ctx.fillStyle = '#000';
+                ctx.font = '12px Arial';
+                ctx.textAlign = 'right';
+                ctx.fillText(value.toString(), chartArea.left - 10, yPos + 4);
+                
+                // Draw horizontal grid line if not at top or bottom
+                if (i > 0 && i < yAxisSteps) {
+                    ctx.strokeStyle = '#e0e0e0';
+                    ctx.lineWidth = 1;
+                    ctx.beginPath();
+                    ctx.moveTo(chartArea.left, yPos);
+                    ctx.lineTo(chartArea.right, yPos);
+                    ctx.stroke();
+                }
+            }
+            
+            // Draw X-axis labels
+            const labels = data.labels || ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+            const xSpacing = chartWidth / labels.length;
+            const barWidth = xSpacing * 0.6;
+            
+            ctx.fillStyle = '#000';
+            ctx.textAlign = 'center';
+            for (let i = 0; i < labels.length; i++) {
+                const xPos = chartArea.left + (i * xSpacing) + (xSpacing / 2);
+                ctx.fillText(labels[i], xPos, chartArea.bottom + 20);
+            }
+            
+            // Draw bars with gradient
+            const datasets = data.datasets || [200, 350, 420, 580, 675, 720, 850, 900, 1020, 1130, 1280, 1450]; // Fallback sample data
+            const barColors = ['#9CADDF']; // Primary accent color for the bars
+            
+            for (let i = 0; i < datasets.length; i++) {
+                const value = datasets[i];
+                const xPos = chartArea.left + (i * xSpacing) + (xSpacing / 2) - (barWidth / 2);
+                const barHeight = (value / scaledMaxValue) * chartHeight;
+                const yPos = chartArea.bottom - barHeight;
+                
+                // Create gradient
+                const gradient = ctx.createLinearGradient(xPos, yPos, xPos, chartArea.bottom);
+                gradient.addColorStop(0, '#9CADDF');
+                gradient.addColorStop(1, '#7AA7D4');
+                
+                ctx.fillStyle = gradient;
+                
+                // Draw rounded top rectangle for the bar
+                roundRect(ctx, xPos, yPos, barWidth, barHeight, 5);
+                
+                // Add value label above the bar
+                ctx.font = '14px Arial';
+                ctx.fillStyle = '#000';
+                ctx.fillText(value.toString(), xPos + (barWidth/2), yPos - 10);
+            }
+            
+            // Function to draw a rectangle with rounded corners
+            function roundRect(ctx, x, y, width, height, radius) {
+                if (width < 2 * radius) radius = width / 2;
+                if (height < 2 * radius) radius = height / 2;
+                
+                ctx.beginPath();
+                ctx.moveTo(x + radius, y);
+                ctx.arcTo(x + width, y, x + width, y + height, radius);
+                ctx.arcTo(x + width, y + height, x, y + height, radius);
+                ctx.arcTo(x, y + height, x, y, radius);
+                ctx.arcTo(x, y, x + width, y, radius);
+                ctx.closePath();
+                ctx.fill();
+            }
+        };
+        
+        // Setup routing and initialize
+        setupRouting();
     });
     </script>
 

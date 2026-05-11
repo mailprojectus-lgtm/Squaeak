@@ -1,9 +1,0 @@
-{
-  "permissions": {
-    "allow": [
-      "Bash(python *)",
-      "Bash(powershell *)"
-    ]
-  },
-  "$version": 4
-}

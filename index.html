@@ -1026,16 +1026,25 @@
         }
 
         // ── Wheel (desktop trackpad / mouse) ──
-        // Timestamp-based cooldown avoids race conditions with rapid trackpad events.
-        let lastNav = 0;
+        // Accumulate delta; only navigate once the gesture crosses the threshold.
+        // While busy (animation playing) we drain events into /dev/null so trackpad
+        // momentum can never queue up extra navigations.
+        let wheelAccum   = 0;
+        let lastWheelT   = 0;
         document.addEventListener('wheel', e => {
             if (document.getElementById('stats-page').classList.contains('visible')) return;
             e.preventDefault();
+            if (busy) { wheelAccum = 0; return; }           // drain momentum during anim
             const now = Date.now();
-            if (now - lastNav < DUR + 100) return;
-            if (Math.abs(e.deltaY) < 3) return;
-            lastNav = now;
-            goTo(current + (e.deltaY > 0 ? 1 : -1));
+            if (now - lastWheelT > 400) wheelAccum = 0;    // new gesture → fresh start
+            lastWheelT = now;
+            // Normalise: trackpad → pixels, mouse → lines (×20) or pages (×400)
+            const px = e.deltaMode === 0 ? e.deltaY : e.deltaY * (e.deltaMode === 1 ? 20 : 400);
+            wheelAccum += px;
+            if (Math.abs(wheelAccum) < 100) return;        // not enough yet
+            const dir = wheelAccum > 0 ? 1 : -1;
+            wheelAccum = 0;
+            goTo(current + dir);
         }, { passive: false });
 
         // ── Touch swipe (mobile) ──

@@ -8,6 +8,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Walter+Turncoat&display=swap" rel="stylesheet">
     <script data-goatcounter="https://squeakapp.goatcounter.com/count" async src="//gc.zgo.at/count.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
     <style>
         :root {
             --background-light: #F7F4EE;
@@ -338,6 +339,126 @@
         }
         [dir="rtl"] .footer-note {
             direction: rtl;
+        }
+
+        /* ── Visitor counter link ── */
+        .visitor-counter-link {
+            color: inherit;
+            text-decoration: underline;
+            text-decoration-style: dotted;
+            text-underline-offset: 3px;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            transition: opacity 0.2s ease;
+        }
+        .visitor-counter-link:hover { opacity: 0.6; }
+
+        /* ── Stats page ── */
+        .stats-page-wrapper {
+            width: 100%;
+            max-width: 860px;
+            margin: 0 auto;
+        }
+        .stats-title {
+            font-family: var(--handwritten-font);
+            font-size: 2rem;
+            margin-bottom: 2rem;
+            color: var(--ink-light);
+        }
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+        .stat-card {
+            background: rgba(255,255,255,0.55);
+            border: 1.5px solid rgba(92,92,92,0.15);
+            border-radius: 12px;
+            padding: 1.5rem 1rem;
+            text-align: center;
+            box-shadow: 2px 2px 0px rgba(92,92,92,0.1);
+        }
+        .stat-card h3 {
+            margin: 0 0 0.4rem 0;
+            font-family: var(--handwritten-font);
+            font-size: 0.95rem;
+            color: var(--ink-light);
+            font-weight: normal;
+        }
+        .stat-card .stat-value {
+            font-family: var(--handwritten-font);
+            font-size: 2.2rem;
+            color: var(--accent-color);
+            margin: 0;
+        }
+        .chart-card, .table-card {
+            background: rgba(255,255,255,0.55);
+            border: 1.5px solid rgba(92,92,92,0.15);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            box-shadow: 2px 2px 0px rgba(92,92,92,0.1);
+        }
+        .chart-card h3, .table-card h3 {
+            font-family: var(--handwritten-font);
+            font-size: 1.1rem;
+            font-weight: normal;
+            color: var(--ink-light);
+            margin: 0 0 1rem 0;
+            text-align: center;
+        }
+        #countries-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.95rem;
+        }
+        #countries-table th {
+            border-bottom: 1.5px solid rgba(92,92,92,0.2);
+            padding: 0.6rem 0.75rem;
+            font-family: var(--handwritten-font);
+            font-weight: normal;
+            color: var(--ink-light);
+        }
+        #countries-table td {
+            border-bottom: 1px solid rgba(92,92,92,0.08);
+            padding: 0.6rem 0.75rem;
+            color: var(--ink-light);
+        }
+        .stats-loading {
+            font-family: var(--handwritten-font);
+            font-size: 1.1rem;
+            color: var(--ink-light);
+            opacity: 0.6;
+            margin: 3rem 0;
+        }
+        .stats-error {
+            color: #c0392b;
+            font-size: 0.95rem;
+            margin: 1rem 0;
+        }
+        .stats-back-btn {
+            position: fixed;
+            bottom: 24px;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 10px 24px;
+            background-color: var(--background-light);
+            border: 1.5px solid var(--ink-light);
+            border-radius: 12px;
+            color: var(--ink-light);
+            font-family: var(--handwritten-font);
+            font-size: 1rem;
+            cursor: pointer;
+            box-shadow: 2px 2px 0px 0px var(--ink-light);
+            transition: all 0.2s ease-out;
+            white-space: nowrap;
+        }
+        .stats-back-btn:hover {
+            transform: translateX(-50%) translateY(-1px);
+            box-shadow: 3px 3px 0px 0px var(--ink-light);
         }
 
         /* ── Responsive: Tablet (≤ 900px) ── */
@@ -708,8 +829,10 @@
             </div>
             <footer class="footer-note">
                 <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap; justify-content:center;">
-                    <span data-i18n="uniqueVisitors">Unique visitors:</span>
-                    <span id="visitors-count" aria-label="Visitor count">…</span>
+                    <a href="#stats" id="visitor-stats-link" class="visitor-counter-link" title="View detailed visitor statistics" aria-label="View visitor statistics">
+                        <span data-i18n="uniqueVisitors">Unique visitors:</span>
+                        <span id="visitors-count" aria-label="Visitor count">…</span>
+                    </a>
                     <span data-i18n="thankYou">| Thank you for checking out the project.</span>
                 </div>
             </footer>
@@ -1082,38 +1205,24 @@
         updateStatsDisplay();
 
         // Set up routing functionality for the website
+        const navigateToStats = () => {
+            document.querySelectorAll('.experience-section').forEach(section => {
+                section.style.display = 'none';
+            });
+            if (!document.getElementById('stats-page')) {
+                createStatsPage();
+            }
+            document.getElementById('stats-page').style.display = 'flex';
+            window.history.pushState({page: 'stats'}, '', '#stats');
+            updateStatsDisplayOnPage();
+        };
+
         const setupRouting = () => {
-            // Add click handler to make visitor count clickable and lead to stats page
-            const countEl = document.getElementById('visitors-count');
-            if (countEl) {
-                // Store the original count click function if it exists
-                if (!countEl.hasAttribute('data-original-title')) {
-                    countEl.setAttribute('data-original-title', countEl.title || '');
-                }
-                countEl.style.cursor = 'pointer';
-                countEl.title = 'View detailed visitor statistics';
-                
-                countEl.addEventListener('click', (e) => {
+            const linkEl = document.getElementById('visitor-stats-link');
+            if (linkEl) {
+                linkEl.addEventListener('click', (e) => {
                     e.preventDefault();
-                    
-                    // Hide main content and show stats page
-                    document.querySelectorAll('.experience-section').forEach(section => {
-                        section.style.display = 'none';
-                    });
-                    
-                    // Create stats page if it doesn't exist
-                    if (!document.getElementById('stats-page')) {
-                        createStatsPage();
-                    }
-                    
-                    // Show the stats page
-                    document.getElementById('stats-page').style.display = 'flex';
-                    
-                    // Update browser history
-                    window.history.pushState({page: 'stats'}, '', '#stats');
-                    
-                    // Fetch fresh stats data for the stats page
-                    updateStatsDisplayOnPage();
+                    navigateToStats();
                 });
             }
             
@@ -1151,100 +1260,78 @@
         const createStatsPage = () => {
             const statsPage = document.createElement('div');
             statsPage.id = 'stats-page';
-            statsPage.className = 'experience-section stats-page';
+            statsPage.className = 'experience-section';
             statsPage.style.cssText = `
                 position: absolute;
-                top: 0;
-                left: 0;
-                width: 100%;
-                height: 100%;
+                top: 0; left: 0;
+                width: 100%; height: 100%;
                 display: none;
                 flex-direction: column;
-                justify-content: flex-start;
                 align-items: center;
-                text-align: center;
-                padding: 2rem;
+                padding: 3rem 1.5rem 5rem;
                 box-sizing: border-box;
                 background-color: var(--background-light);
-                color: var(--ink-light);
                 overflow-y: auto;
                 z-index: 100;
             `;
-            
+
             statsPage.innerHTML = `
-                <h1 style="font-size: 2.5rem; margin-bottom: 2rem;">Website Statistics</h1>
-                
-                <div id="loading-stats" style="margin: 2rem; font-size: 1.2rem;">Loading statistics...</div>
-                
-                <div id="stats-content" style="display: none; width: 100%; max-width: 800px; margin: 0 auto;">
-                    <div class="stats-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.5rem; margin-bottom: 2rem;">
-                        <div class="stat-card" style="background: white; padding: 1.5rem; border: 1px solid #ddd; border-radius: 8px; text-align: center;">
-                            <h3 style="margin: 0 0 0.5rem 0; font-size: 1.1rem;">Total Users</h3>
-                            <p id="total-users-stats" style="font-size: 2rem; margin: 0; color: #9CADDF;">0</p>
+                <div class="stats-page-wrapper">
+                    <h1 class="stats-title">Website Statistics</h1>
+
+                    <div id="loading-stats" class="stats-loading">Loading statistics…</div>
+
+                    <div id="stats-content" style="display:none; width:100%;">
+                        <div class="stats-grid">
+                            <div class="stat-card">
+                                <h3>Total Users</h3>
+                                <p id="total-users-stats" class="stat-value">—</p>
+                            </div>
+                            <div class="stat-card">
+                                <h3>Total Entries</h3>
+                                <p id="total-entries-stats" class="stat-value">—</p>
+                            </div>
+                            <div class="stat-card">
+                                <h3>Emotion of the Week</h3>
+                                <p id="emotion-week-stats" class="stat-value" style="font-size:1.5rem;">—</p>
+                            </div>
                         </div>
-                        <div class="stat-card" style="background: white; padding: 1.5rem; border: 1px solid #ddd; border-radius: 8px; text-align: center;">
-                            <h3 style="margin: 0 0 0.5rem 0; font-size: 1.1rem;">Total Entries</h3>
-                            <p id="total-entries-stats" style="font-size: 2rem; margin: 0; color: #9CADDF;">0</p>
+
+                        <div class="chart-card">
+                            <h3>Users Over Time</h3>
+                            <div style="height:300px; position:relative;">
+                                <canvas id="usersChartCanvas"></canvas>
+                            </div>
                         </div>
-                        <div class="stat-card" style="background: white; padding: 1.5rem; border: 1px solid #ddd; border-radius: 8px; text-align: center;">
-                            <h3 style="margin: 0 0 0.5rem 0; font-size: 1.1rem;">Emotion of the Week</h3>
-                            <p id="emotion-week-stats" style="font-size: 2rem; margin: 0; color: #9CADDF;">N/A</p>
+
+                        <div class="table-card">
+                            <h3>Visitors by Country</h3>
+                            <table id="countries-table">
+                                <thead>
+                                    <tr>
+                                        <th style="text-align:left;">Country</th>
+                                        <th style="text-align:right;">Visitors</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="countries-body"></tbody>
+                            </table>
                         </div>
+
+                        <div id="api-error-message" class="stats-error" style="display:none;"></div>
                     </div>
-                    
-                    <div class="chart-section" style="width: 100%; background: white; padding: 1.5rem; border: 1px solid #ddd; border-radius: 8px; margin-bottom: 2rem;">
-                        <h3 style="margin-top: 0; text-align: center;">Users Over Time</h3>
-                        <div id="usersChartContainer" style="height: 400px; position: relative;">
-                            <canvas id="usersChartCanvas" style="width:100%; height:100%;"></canvas>
-                        </div>
-                    </div>
-                    
-                    <div class="countries-section" style="width: 100%; background: white; padding: 1.5rem; border: 1px solid #ddd; border-radius: 8px; margin-bottom: 2rem;">
-                        <h3 style="margin-top: 0; text-align: center;">Visitor Countries</h3>
-                        <table id="countries-table" style="width: 100%; border-collapse: collapse;">
-                            <thead>
-                                <tr>
-                                    <th style="border-bottom: 2px solid #ddd; padding: 0.75rem; text-align: left;">Country</th>
-                                    <th style="border-bottom: 2px solid #ddd; padding: 0.75rem; text-align: right;">Number of Visitors</th>
-                                </tr>
-                            </thead>
-                            <tbody id="countries-body">
-                                <!-- Data will be filled by JavaScript -->
-                            </tbody>
-                        </table>
-                    </div>
-                    
-                    <div id="api-error-message" style="display: none; color: #e74c3c; margin: 1rem 0;"></div>
                 </div>
-                
-                <button id="go-back-btn" style="
-                    position: fixed; 
-                    bottom: 20px; 
-                    padding: 10px 20px; 
-                    background-color: #fff; 
-                    border: 1.5px solid var(--ink-light); 
-                    border-radius: 12px; 
-                    color: var(--ink-light);
-                    font-family: var(--handwritten-font);
-                    cursor: pointer;
-                    box-shadow: 2px 2px 0px 0px var(--ink-light);
-                    transition: all 0.2s ease-out;
-                ">Go Back to Homepage</button>
+
+                <button id="go-back-btn" class="stats-back-btn">← Back to Homepage</button>
             `;
-            
+
             document.querySelector('main').appendChild(statsPage);
-            
-            // Add click handler to the go back button
+
             document.getElementById('go-back-btn').addEventListener('click', () => {
-                // Hide stats page and show main content
                 document.getElementById('stats-page').style.display = 'none';
-                document.querySelectorAll('.experience-section:not(#stats-page)').forEach(section => {
-                    section.style.display = 'flex';
+                document.querySelectorAll('.experience-section:not(#stats-page)').forEach(s => {
+                    s.style.display = 'flex';
                 });
-                if (sections[current]) {
-                    sections[current].style.transform = 'translateY(0)';
-                }
-                
+                if (sections[current]) sections[current].style.transform = 'translateY(0)';
                 window.history.pushState({page: 'home'}, '', '/');
             });
         };
@@ -1287,42 +1374,18 @@
                 }
                 
                 // Populate countries table
-                if (document.getElementById('countries-body')) {
-                    const tbody = document.getElementById('countries-body');
-                    tbody.innerHTML = ''; // Clear existing rows
-                    
-                    // This assumes the response includes a 'visitor_countries' property
-                    if (data.visitor_countries && Array.isArray(data.visitor_countries)) {
-                        // Sort countries by visitor count (descending)
-                        data.visitor_countries.sort((a, b) => b.count - a.count);
-                        
-                        data.visitor_countries.forEach(item => {
-                            const row = document.createElement('tr');
-                            row.innerHTML = `
-                                <td style="border-bottom: 1px solid #eee; padding: 0.75rem; text-align: left;">${item.country}</td>
-                                <td style="border-bottom: 1px solid #eee; padding: 0.75rem; text-align: right;">${item.count}</td>
-                            `;
-                            tbody.appendChild(row);
-                        });
+                const tbody = document.getElementById('countries-body');
+                if (tbody) {
+                    tbody.innerHTML = '';
+                    const countries = (data.visitor_countries && Array.isArray(data.visitor_countries))
+                        ? [...data.visitor_countries].sort((a, b) => b.count - a.count)
+                        : [];
+                    if (countries.length === 0) {
+                        tbody.innerHTML = `<tr><td colspan="2" style="padding:1rem;text-align:center;opacity:0.5;">No country data available yet.</td></tr>`;
                     } else {
-                        // Fallback: use static sample data - in production this would come from your API
-                        const countriesData = [
-                            { country: 'United States', count: 250 },
-                            { country: 'Germany', count: 180 },
-                            { country: 'France', count: 150 },
-                            { country: 'Brazil', count: 120 },
-                            { country: 'Japan', count: 95 },
-                            { country: 'India', count: 85 },
-                            { country: 'Canada', count: 75 },
-                            { country: 'Australia', count: 60 }
-                        ];
-                        
-                        countriesData.forEach(item => {
+                        countries.forEach(item => {
                             const row = document.createElement('tr');
-                            row.innerHTML = `
-                                <td style="border-bottom: 1px solid #eee; padding: 0.75rem; text-align: left;">${item.country}</td>
-                                <td style="border-bottom: 1px solid #eee; padding: 0.75rem; text-align: right;">${item.count}</td>
-                            `;
+                            row.innerHTML = `<td>${item.country}</td><td style="text-align:right;">${item.count.toLocaleString()}</td>`;
                             tbody.appendChild(row);
                         });
                     }
@@ -1333,135 +1396,81 @@
             })
             .catch(error => {
                 console.error('Error fetching stats:', error);
-                
-                // Show error on the stats page
-                if (document.getElementById('loading-stats')) {
-                    document.getElementById('loading-stats').style.display = 'none';
-                    document.getElementById('stats-content').style.display = 'none';
-                                    
-                    const errorMessage = document.getElementById('api-error-message');
-                    errorMessage.textContent = 'Failed to load statistics. Please try again later.';
-                    errorMessage.style.display = 'block';
+                const loadingEl = document.getElementById('loading-stats');
+                const errorEl = document.getElementById('api-error-message');
+                if (loadingEl) loadingEl.style.display = 'none';
+                if (errorEl) {
+                    errorEl.textContent = 'Failed to load statistics. Please try again later.';
+                    errorEl.style.display = 'block';
                 }
+                const contentEl = document.getElementById('stats-content');
+                if (contentEl) contentEl.style.display = 'block';
             });
         };
         
-        // Function to generate chart with user data
+        // Chart.js line graph for "Users Over Time"
+        let usersChart = null;
+
         const generateUsersChart = (usersOverTimeData) => {
-            const ctx = document.getElementById('usersChartCanvas').getContext('2d');
-            
-            // Clear previously drawn chart
-            ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
-            
-            // If we have actual data from API, use it
-            const data = usersOverTimeData ? usersOverTimeData : {
+            const canvas = document.getElementById('usersChartCanvas');
+            if (!canvas) return;
+
+            const raw = usersOverTimeData || {
                 labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
-                datasets: [200, 350, 420, 580, 675, 720, 850, 900, 1020, 1130, 1280, 1450] // Sample data
+                datasets: [200, 350, 420, 580, 675, 720, 850, 900, 1020, 1130, 1280, 1450]
             };
-            
-            // Update the canvas width and height
-            const container = document.getElementById('usersChartContainer');
-            ctx.canvas.width = container.clientWidth;
-            ctx.canvas.height = container.clientHeight;
-            
-            // Chart properties
-            const chartArea = {
-                top: 50,
-                right: ctx.canvas.width - 50,
-                bottom: ctx.canvas.height - 50,
-                left: 60
-            };
-            
-            const chartWidth = chartArea.right - chartArea.left;
-            const chartHeight = chartArea.bottom - chartArea.top;
-            
-            // Find max value to set scale
-            const maxValue = Math.max(...(data.datasets || []), 100);
-            const scaledMaxValue = Math.ceil(maxValue / 100) * 100; // Round up to nearest hundred
-            
-            // Draw X and Y axis
-            ctx.strokeStyle = '#000';
-            ctx.lineWidth = 1;
-            ctx.beginPath();
-            ctx.moveTo(chartArea.left, chartArea.top);
-            ctx.lineTo(chartArea.left, chartArea.bottom); // Y-axis
-            ctx.lineTo(chartArea.right, chartArea.bottom); // X-axis
-            ctx.stroke();
-            
-            // Draw Y-axis labels and grid lines
-            const yAxisSteps = 5;
-            for (let i = 0; i <= yAxisSteps; i++) {
-                const value = Math.round((scaledMaxValue / yAxisSteps) * i);
-                const yPos = chartArea.bottom - (i * (chartHeight / yAxisSteps));
-                
-                ctx.fillStyle = '#000';
-                ctx.font = '12px Arial';
-                ctx.textAlign = 'right';
-                ctx.fillText(value.toString(), chartArea.left - 10, yPos + 4);
-                
-                // Draw horizontal grid line if not at top or bottom
-                if (i > 0 && i < yAxisSteps) {
-                    ctx.strokeStyle = '#e0e0e0';
-                    ctx.lineWidth = 1;
-                    ctx.beginPath();
-                    ctx.moveTo(chartArea.left, yPos);
-                    ctx.lineTo(chartArea.right, yPos);
-                    ctx.stroke();
+
+            if (usersChart) {
+                usersChart.destroy();
+                usersChart = null;
+            }
+
+            usersChart = new Chart(canvas, {
+                type: 'line',
+                data: {
+                    labels: raw.labels,
+                    datasets: [{
+                        label: 'Users',
+                        data: raw.datasets,
+                        borderColor: '#9CADDF',
+                        backgroundColor: 'rgba(156,173,223,0.12)',
+                        borderWidth: 2.5,
+                        pointBackgroundColor: '#9CADDF',
+                        pointBorderColor: '#fff',
+                        pointBorderWidth: 2,
+                        pointRadius: 5,
+                        pointHoverRadius: 7,
+                        fill: true,
+                        tension: 0.4,
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            backgroundColor: '#fff',
+                            titleColor: '#5C5C5C',
+                            bodyColor: '#5C5C5C',
+                            borderColor: 'rgba(92,92,92,0.2)',
+                            borderWidth: 1,
+                            padding: 10,
+                        }
+                    },
+                    scales: {
+                        x: {
+                            grid: { color: 'rgba(92,92,92,0.06)' },
+                            ticks: { color: '#5C5C5C', font: { family: "'Walter Turncoat', cursive", size: 13 } }
+                        },
+                        y: {
+                            beginAtZero: true,
+                            grid: { color: 'rgba(92,92,92,0.06)' },
+                            ticks: { color: '#5C5C5C', font: { family: "'Walter Turncoat', cursive", size: 13 } }
+                        }
+                    }
                 }
-            }
-            
-            // Draw X-axis labels
-            const labels = data.labels || ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-            const xSpacing = chartWidth / labels.length;
-            const barWidth = xSpacing * 0.6;
-            
-            ctx.fillStyle = '#000';
-            ctx.textAlign = 'center';
-            for (let i = 0; i < labels.length; i++) {
-                const xPos = chartArea.left + (i * xSpacing) + (xSpacing / 2);
-                ctx.fillText(labels[i], xPos, chartArea.bottom + 20);
-            }
-            
-            // Draw bars with gradient
-            const datasets = data.datasets || [200, 350, 420, 580, 675, 720, 850, 900, 1020, 1130, 1280, 1450]; // Fallback sample data
-            const barColors = ['#9CADDF']; // Primary accent color for the bars
-            
-            for (let i = 0; i < datasets.length; i++) {
-                const value = datasets[i];
-                const xPos = chartArea.left + (i * xSpacing) + (xSpacing / 2) - (barWidth / 2);
-                const barHeight = (value / scaledMaxValue) * chartHeight;
-                const yPos = chartArea.bottom - barHeight;
-                
-                // Create gradient
-                const gradient = ctx.createLinearGradient(xPos, yPos, xPos, chartArea.bottom);
-                gradient.addColorStop(0, '#9CADDF');
-                gradient.addColorStop(1, '#7AA7D4');
-                
-                ctx.fillStyle = gradient;
-                
-                // Draw rounded top rectangle for the bar
-                roundRect(ctx, xPos, yPos, barWidth, barHeight, 5);
-                
-                // Add value label above the bar
-                ctx.font = '14px Arial';
-                ctx.fillStyle = '#000';
-                ctx.fillText(value.toString(), xPos + (barWidth/2), yPos - 10);
-            }
-            
-            // Function to draw a rectangle with rounded corners
-            function roundRect(ctx, x, y, width, height, radius) {
-                if (width < 2 * radius) radius = width / 2;
-                if (height < 2 * radius) radius = height / 2;
-                
-                ctx.beginPath();
-                ctx.moveTo(x + radius, y);
-                ctx.arcTo(x + width, y, x + width, y + height, radius);
-                ctx.arcTo(x + width, y + height, x, y + height, radius);
-                ctx.arcTo(x, y + height, x, y, radius);
-                ctx.arcTo(x, y, x + width, y, radius);
-                ctx.closePath();
-                ctx.fill();
-            }
+            });
         };
         
         // Setup routing and initialize

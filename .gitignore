@@ -1,0 +1,7 @@
+# Local AI assistant settings — never commit these
+.claude/
+.qwen/
+
+# OS artifacts
+.DS_Store
+Thumbs.db

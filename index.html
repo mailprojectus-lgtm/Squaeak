@@ -8,6 +8,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Walter+Turncoat&display=swap" rel="stylesheet">
     <script data-goatcounter="https://squeakapp.goatcounter.com/count" async src="//gc.zgo.at/count.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
     <style>
         :root {
             --background-light: #F7F4EE;
@@ -916,22 +917,12 @@
                     </div>
                 </div>
 
-                <!-- 2. Visitors over time (GoatCounter public iframe) -->
+                <!-- 2. Visitors over time (Chart.js — GoatCounter API) -->
                 <div class="chart-card">
                     <h3>Visitors Over Time</h3>
-                    <div style="overflow:hidden; border-radius:8px; height:320px; position:relative;">
-                        <iframe
-                            src="https://squeakapp.goatcounter.com/"
-                            style="width:100%; height:900px; border:none; margin-top:-80px; pointer-events:none;"
-                            title="Squeak visitor analytics"
-                            loading="lazy"
-                            aria-hidden="true"></iframe>
+                    <div style="position:relative; height:260px;">
+                        <canvas id="visitorsChart"></canvas>
                     </div>
-                    <p style="text-align:center; margin:0.8rem 0 0;">
-                        <a href="https://squeakapp.goatcounter.com/" target="_blank" rel="noopener" class="stats-link">
-                            Open full analytics ↗
-                        </a>
-                    </p>
                 </div>
 
                 <!-- 3. Visitors by country -->
@@ -1327,44 +1318,136 @@
             });
         };
         
-        // ── Stats page data loader ── Supabase only; GoatCounter shown via iframe
+        // ── Stats page data loader ── Supabase (app stats) + GoatCounter API (visitors/countries)
+        const GC_TOKEN = '1f9mynji0fwhm7lzq1jsuo1eg8hz8fdgxwghcp5ck30gndcai';
+        const GC_BASE  = 'https://squeakapp.goatcounter.com/api/v0';
+        const GC_START = '2026-03-01';
+
+        let visitorsChartInstance = null;
+
+        const toFlag = iso2 => {
+            if (!iso2 || iso2.length !== 2) return '';
+            return [...iso2.toUpperCase()].map(c => String.fromCodePoint(0x1F1E6 + c.charCodeAt(0) - 65)).join('');
+        };
+
         const updateStatsDisplayOnPage = () => {
-            const ctrl  = new AbortController();
-            const timer = setTimeout(() => ctrl.abort(), 8000);
+            const ctrl     = new AbortController();
+            const timer    = setTimeout(() => ctrl.abort(), 10000);
+            const gcHdrs   = { Authorization: `Bearer ${GC_TOKEN}` };
+            const today    = new Date().toISOString().split('T')[0];
 
-            fetch('https://lovrkeogsaxihyszaaom.supabase.co/functions/v1/website-stats', {
+            const supaFetch = fetch('https://lovrkeogsaxihyszaaom.supabase.co/functions/v1/website-stats', {
                 cache: 'no-store', signal: ctrl.signal,
-            })
-            .finally(() => clearTimeout(timer))
-            .then(r => { if (!r.ok) throw r; return r.json(); })
-            .then(data => {
-                const fmt = n => typeof n === 'number' ? n.toLocaleString() : '—';
-                document.getElementById('total-users-stats').textContent  = fmt(data.total_users);
-                document.getElementById('total-entries-stats').textContent = fmt(data.total_entries);
-                document.getElementById('mood-stats').textContent          = data.top_mood_this_week || '—';
+            }).then(r => r.ok ? r.json() : Promise.reject(r));
 
-                const tbody = document.getElementById('countries-body');
-                tbody.innerHTML = '';
-                const list = Array.isArray(data.visitor_countries)
-                    ? [...data.visitor_countries].sort((a, b) => b.count - a.count)
-                    : [];
-                if (list.length === 0) {
-                    tbody.innerHTML = `<tr><td colspan="2" style="padding:1.2rem;text-align:center;opacity:0.45;">
-                        No country data yet — <a href="https://squeakapp.goatcounter.com/" target="_blank" class="stats-link">view full dashboard ↗</a>
-                    </td></tr>`;
-                } else {
-                    list.forEach(({ country, count }) => {
-                        const row = document.createElement('tr');
-                        row.innerHTML = `<td>${country}</td><td style="text-align:right;">${count.toLocaleString()}</td>`;
-                        tbody.appendChild(row);
+            const gcTotalFetch = fetch(`${GC_BASE}/stats/total?start=${GC_START}&end=${today}`, {
+                headers: gcHdrs, cache: 'no-store', signal: ctrl.signal,
+            }).then(r => r.ok ? r.json() : Promise.reject(r));
+
+            const gcLocFetch = fetch(`${GC_BASE}/stats/locations?start=${GC_START}&end=${today}`, {
+                headers: gcHdrs, cache: 'no-store', signal: ctrl.signal,
+            }).then(r => r.ok ? r.json() : Promise.reject(r));
+
+            Promise.allSettled([supaFetch, gcTotalFetch, gcLocFetch])
+            .then(([supaRes, totalRes, locRes]) => {
+                clearTimeout(timer);
+
+                // 1. App stats (Supabase)
+                if (supaRes.status === 'fulfilled') {
+                    const d = supaRes.value;
+                    const fmt = n => typeof n === 'number' ? n.toLocaleString() : '—';
+                    document.getElementById('total-users-stats').textContent   = fmt(d.total_users);
+                    document.getElementById('total-entries-stats').textContent = fmt(d.total_entries);
+                    document.getElementById('mood-stats').textContent          = d.top_mood_this_week || '—';
+                }
+
+                // 2. Visitors over time chart (GoatCounter stats/total → weekly groups)
+                if (totalRes.status === 'fulfilled') {
+                    const hits = totalRes.value.hits || [];
+
+                    const weekMap = new Map();
+                    hits.forEach(({ day, count_unique, count }) => {
+                        const d   = new Date(day + 'T00:00:00Z');
+                        const dow = d.getUTCDay();
+                        const mon = new Date(d);
+                        mon.setUTCDate(d.getUTCDate() + (dow === 0 ? -6 : 1 - dow));
+                        const key = mon.toISOString().split('T')[0];
+                        weekMap.set(key, (weekMap.get(key) || 0) + (count_unique ?? count ?? 0));
+                    });
+
+                    const labels = [...weekMap.keys()].sort();
+                    const values = labels.map(k => weekMap.get(k));
+
+                    if (visitorsChartInstance) { visitorsChartInstance.destroy(); visitorsChartInstance = null; }
+
+                    const ctx = document.getElementById('visitorsChart').getContext('2d');
+                    visitorsChartInstance = new Chart(ctx, {
+                        type: 'line',
+                        data: {
+                            labels: labels.map(iso => {
+                                const dt = new Date(iso + 'T00:00:00Z');
+                                return dt.toLocaleDateString('en', { month: 'short', day: 'numeric', timeZone: 'UTC' });
+                            }),
+                            datasets: [{
+                                label: 'Unique visitors',
+                                data: values,
+                                borderColor: '#9CADDF',
+                                backgroundColor: 'rgba(156,173,223,0.12)',
+                                borderWidth: 2,
+                                pointRadius: 4,
+                                pointBackgroundColor: '#9CADDF',
+                                tension: 0.35,
+                                fill: true,
+                            }],
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                legend: { display: false },
+                                tooltip: { mode: 'index', intersect: false },
+                            },
+                            scales: {
+                                x: {
+                                    grid: { color: 'rgba(92,92,92,0.1)' },
+                                    ticks: { font: { family: "'Walter Turncoat', cursive" }, color: '#5C5C5C' },
+                                },
+                                y: {
+                                    beginAtZero: true,
+                                    grid: { color: 'rgba(92,92,92,0.1)' },
+                                    ticks: { font: { family: "'Walter Turncoat', cursive" }, color: '#5C5C5C', precision: 0 },
+                                },
+                            },
+                        },
                     });
                 }
-            })
-            .catch(err => {
-                console.error('Supabase error:', err);
-                const el = document.getElementById('api-error-message');
-                el.textContent = 'Could not load statistics. Please try again later.';
-                el.style.display = 'block';
+
+                // 3. Countries table (GoatCounter stats/locations)
+                const tbody = document.getElementById('countries-body');
+                tbody.innerHTML = '';
+                if (locRes.status === 'fulfilled') {
+                    const locs = [...(locRes.value.locations || [])].sort((a, b) =>
+                        (b.count_unique ?? b.count ?? 0) - (a.count_unique ?? a.count ?? 0));
+                    if (locs.length === 0) {
+                        tbody.innerHTML = `<tr><td colspan="2" style="padding:1.2rem;text-align:center;opacity:0.45;">No country data yet.</td></tr>`;
+                    } else {
+                        locs.forEach(({ id, name, count_unique, count }) => {
+                            const n   = count_unique ?? count ?? 0;
+                            const row = document.createElement('tr');
+                            row.innerHTML = `<td>${toFlag(id) ? toFlag(id) + ' ' : ''}${name || id}</td><td style="text-align:right;">${n.toLocaleString()}</td>`;
+                            tbody.appendChild(row);
+                        });
+                    }
+                } else {
+                    tbody.innerHTML = `<tr><td colspan="2" style="padding:1.2rem;text-align:center;opacity:0.45;">Could not load country data.</td></tr>`;
+                }
+
+                // Surface error only if everything failed
+                if (supaRes.status === 'rejected' && totalRes.status === 'rejected' && locRes.status === 'rejected') {
+                    const el = document.getElementById('api-error-message');
+                    el.textContent = 'Could not load statistics. Please try again later.';
+                    el.style.display = 'block';
+                }
             })
             .finally(() => {
                 document.getElementById('loading-stats').style.display = 'none';

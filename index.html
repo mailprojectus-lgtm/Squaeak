@@ -377,6 +377,22 @@
         }
         .visitor-counter-link:hover { opacity: 0.6; }
 
+        /* ── Stats page overlay ── */
+        #stats-page {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            padding: 3rem 1.5rem 5rem;
+            box-sizing: border-box;
+            background-color: var(--background-light);
+            overflow-y: auto;
+            z-index: 200;
+        }
+        #stats-page.visible { display: flex; }
+
         /* ── Stats page ── */
         .stats-page-wrapper {
             width: 100%;
@@ -862,6 +878,81 @@
 
     </main>
 
+    <!-- ══ Stats overlay page ══ -->
+    <div id="stats-page" role="main" aria-label="Statistics">
+
+        <div class="stats-page-wrapper">
+            <h1 class="stats-title">Squeak — Stats</h1>
+
+            <p id="loading-stats" class="stats-loading">Loading…</p>
+
+            <div id="stats-content" style="display:none; width:100%;">
+
+                <!-- Website (GoatCounter) -->
+                <div class="section-divider"><span>Website</span></div>
+                <div class="stats-grid" style="grid-template-columns:1fr 1fr;">
+                    <div class="stat-card">
+                        <h3>Unique Visitors</h3>
+                        <p id="gc-visitors-stats" class="stat-value" style="font-size:2.6rem;">—</p>
+                    </div>
+                    <div class="stat-card">
+                        <h3>Total Pageviews</h3>
+                        <p id="gc-pageviews-stats" class="stat-value" style="font-size:2.6rem;">—</p>
+                    </div>
+                </div>
+
+                <div class="chart-card">
+                    <h3>Squeak by the Numbers</h3>
+                    <div style="height:220px; position:relative;">
+                        <canvas id="usersChartCanvas"></canvas>
+                    </div>
+                </div>
+
+                <div class="table-card">
+                    <h3>Visitors by Country</h3>
+                    <table id="countries-table">
+                        <thead>
+                            <tr>
+                                <th style="text-align:left;">Country</th>
+                                <th style="text-align:right;">Visitors</th>
+                            </tr>
+                        </thead>
+                        <tbody id="countries-body">
+                            <tr><td colspan="2" style="padding:1rem;text-align:center;opacity:0.5;">Loading…</td></tr>
+                        </tbody>
+                    </table>
+                    <p style="text-align:center;margin-top:1rem;margin-bottom:0;">
+                        <a href="https://squeakapp.goatcounter.com/" target="_blank" rel="noopener"
+                           style="color:var(--accent-color);text-decoration:none;font-family:var(--handwritten-font);font-size:0.9rem;">
+                            View full analytics dashboard ↗
+                        </a>
+                    </p>
+                </div>
+
+                <!-- Squeak App (Supabase) -->
+                <div class="section-divider"><span>Squeak App</span></div>
+                <div class="stats-grid" style="margin-bottom:2rem;">
+                    <div class="stat-card">
+                        <h3>App Users</h3>
+                        <p id="total-users-stats" class="stat-value">—</p>
+                    </div>
+                    <div class="stat-card">
+                        <h3>Journal Entries</h3>
+                        <p id="total-entries-stats" class="stat-value">—</p>
+                    </div>
+                    <div class="stat-card">
+                        <h3>Top Mood This Week</h3>
+                        <p id="mood-stats" class="stat-value" style="font-size:1.5rem;">—</p>
+                    </div>
+                </div>
+
+                <p id="api-error-message" class="stats-error" style="display:none;"></p>
+            </div>
+        </div>
+
+        <button id="go-back-btn" class="stats-back-btn">← Back to Homepage</button>
+    </div>
+
     <script>
     document.addEventListener('DOMContentLoaded', () => {
 
@@ -1200,238 +1291,107 @@
 
         updateStatsDisplay();
 
-        // Set up routing functionality for the website
-        const navigateToStats = () => {
-            document.querySelectorAll('.experience-section').forEach(section => {
-                section.style.display = 'none';
-            });
-            if (!document.getElementById('stats-page')) {
-                createStatsPage();
-            }
-            document.getElementById('stats-page').style.display = 'flex';
+        const openStats = () => {
+            document.getElementById('stats-page').classList.add('visible');
+            // Reset to loading state each open
+            document.getElementById('loading-stats').style.display = 'block';
+            document.getElementById('stats-content').style.display = 'none';
+            document.getElementById('api-error-message').style.display = 'none';
             window.history.pushState({page: 'stats'}, '', '#stats');
             updateStatsDisplayOnPage();
         };
 
-        const setupRouting = () => {
-            const linkEl = document.getElementById('visitor-stats-link');
-            if (linkEl) {
-                linkEl.addEventListener('click', (e) => {
-                    e.preventDefault();
-                    navigateToStats();
-                });
-            }
-            
-            // Handle browser back/forward buttons
-            window.addEventListener('popstate', (event) => {
-                if (window.location.hash === '#stats' || event.state?.page === 'stats') {
-                    document.querySelectorAll('.experience-section').forEach(section => {
-                        section.style.display = 'none';
-                    });
-                    if (!document.getElementById('stats-page')) {
-                        createStatsPage();
-                    }
-                    document.getElementById('stats-page').style.display = 'flex';
-                    
-                    // Update stats if page is shown
-                    updateStatsDisplayOnPage();
-                } else {
-                    // Show main content and hide stats page
-                    document.querySelectorAll('.experience-section').forEach(section => {
-                        section.style.display = 'flex';
-                    });
-                    if (document.getElementById('stats-page')) {
-                        document.getElementById('stats-page').style.display = 'none';
-                    }
-                    // Make sure appropriate section is visible based on scroll position
-                    if (sections[current]) {
-                        sections[current].style.transform = 'translateY(0)';
-                        sections[current].classList.add('visible');
-                    }
-                }
-            });
+        const closeStats = () => {
+            document.getElementById('stats-page').classList.remove('visible');
+            window.history.pushState({page: 'home'}, '', '/');
         };
 
-        // Function to create the stats page dynamically
-        const createStatsPage = () => {
-            const statsPage = document.createElement('div');
-            statsPage.id = 'stats-page';
-            statsPage.className = 'experience-section';
-            statsPage.style.cssText = `
-                position: absolute;
-                top: 0; left: 0;
-                width: 100%; height: 100%;
-                display: none;
-                flex-direction: column;
-                align-items: center;
-                padding: 3rem 1.5rem 5rem;
-                box-sizing: border-box;
-                background-color: var(--background-light);
-                overflow-y: auto;
-                z-index: 100;
-            `;
+        const setupRouting = () => {
+            document.getElementById('visitor-stats-link').addEventListener('click', e => {
+                e.preventDefault();
+                openStats();
+            });
 
-            statsPage.innerHTML = `
-                <div class="stats-page-wrapper">
-                    <h1 class="stats-title">Squeak — Stats</h1>
+            document.getElementById('go-back-btn').addEventListener('click', closeStats);
 
-                    <div id="loading-stats" class="stats-loading">Loading…</div>
-
-                    <div id="stats-content" style="display:none; width:100%;">
-
-                        <!-- ── Website Analytics (GoatCounter) ── -->
-                        <div class="section-divider"><span>Website</span></div>
-                        <div class="stats-grid" style="grid-template-columns:1fr 1fr;">
-                            <div class="stat-card">
-                                <h3>Unique Visitors</h3>
-                                <p id="gc-visitors-stats" class="stat-value" style="font-size:2.6rem;">—</p>
-                            </div>
-                            <div class="stat-card">
-                                <h3>Total Pageviews</h3>
-                                <p id="gc-pageviews-stats" class="stat-value" style="font-size:2.6rem;">—</p>
-                            </div>
-                        </div>
-
-                        <div class="chart-card">
-                            <h3>Squeak by the Numbers</h3>
-                            <div style="height:220px; position:relative;">
-                                <canvas id="usersChartCanvas"></canvas>
-                            </div>
-                        </div>
-
-                        <div class="table-card">
-                            <h3>Visitors by Country</h3>
-                            <table id="countries-table">
-                                <thead>
-                                    <tr>
-                                        <th style="text-align:left;">Country</th>
-                                        <th style="text-align:right;">Visitors</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="countries-body"></tbody>
-                            </table>
-                            <p style="text-align:center; margin-top:1rem; margin-bottom:0;">
-                                <a href="https://squeakapp.goatcounter.com/" target="_blank" rel="noopener"
-                                   style="color:var(--accent-color); text-decoration:none; font-family:var(--handwritten-font); font-size:0.9rem;">
-                                    View full analytics dashboard ↗
-                                </a>
-                            </p>
-                        </div>
-
-                        <!-- ── Squeak App Stats (Supabase) ── -->
-                        <div class="section-divider"><span>Squeak App</span></div>
-                        <div class="stats-grid" style="margin-bottom:2rem;">
-                            <div class="stat-card">
-                                <h3>App Users</h3>
-                                <p id="total-users-stats" class="stat-value">—</p>
-                            </div>
-                            <div class="stat-card">
-                                <h3>Journal Entries</h3>
-                                <p id="total-entries-stats" class="stat-value">—</p>
-                            </div>
-                            <div class="stat-card">
-                                <h3>Top Mood This Week</h3>
-                                <p id="mood-stats" class="stat-value" style="font-size:1.5rem;">—</p>
-                            </div>
-                        </div>
-
-                        <div id="api-error-message" class="stats-error" style="display:none;"></div>
-                    </div>
-                </div>
-
-                <button id="go-back-btn" class="stats-back-btn">← Back to Homepage</button>
-            `;
-
-            document.querySelector('main').appendChild(statsPage);
-
-            document.getElementById('go-back-btn').addEventListener('click', () => {
-                document.getElementById('stats-page').style.display = 'none';
-                document.querySelectorAll('.experience-section:not(#stats-page)').forEach(s => {
-                    s.style.display = 'flex';
-                });
-                if (sections[current]) sections[current].style.transform = 'translateY(0)';
-                window.history.pushState({page: 'home'}, '', '/');
+            window.addEventListener('popstate', event => {
+                if (window.location.hash === '#stats' || event.state?.page === 'stats') {
+                    openStats();
+                } else {
+                    closeStats();
+                }
             });
         };
         
         // ── Stats page data loader ──
-        // Two independent fetches in parallel: GoatCounter (website) + Supabase (app)
         const updateStatsDisplayOnPage = () => {
-            const show = () => {
-                const loadingEl = document.getElementById('loading-stats');
-                const contentEl = document.getElementById('stats-content');
-                if (loadingEl) loadingEl.style.display = 'none';
-                if (contentEl) contentEl.style.display = 'block';
+            let gcVisitors = 0;
+            let appUsers   = 0;
+            let entries    = 0;
+            let gcDone     = false;
+            let supaDone   = false;
+
+            const tryShow = () => {
+                if (!gcDone || !supaDone) return;
+                generateUsersChart(gcVisitors, appUsers, entries);
+                document.getElementById('loading-stats').style.display = 'none';
+                document.getElementById('stats-content').style.display = 'block';
             };
 
-            // GoatCounter — website visitor count
+            // GoatCounter — website visitors
             fetch('https://squeakapp.goatcounter.com/counter/%2F.json', { cache: 'no-store' })
             .then(r => { if (!r.ok) throw r; return r.json(); })
             .then(j => {
-                const uniqueVal = j.count_unique ?? j.count ?? '—';
-                const pvVal     = j.count ?? '—';
-                const gcEl  = document.getElementById('gc-visitors-stats');
-                const pvEl  = document.getElementById('gc-pageviews-stats');
-                if (gcEl) gcEl.textContent = String(uniqueVal);
-                if (pvEl) pvEl.textContent = String(pvVal);
-                show();
-                // Rebuild chart now that we have visitor numbers
-                generateUsersChart(uniqueVal, pvVal);
+                gcVisitors = parseInt(j.count_unique ?? j.count ?? '0', 10) || 0;
+                document.getElementById('gc-visitors-stats').textContent = gcVisitors.toLocaleString();
+                document.getElementById('gc-pageviews-stats').textContent = (parseInt(j.count ?? '0', 10) || 0).toLocaleString();
             })
-            .catch(() => show());
+            .catch(() => {
+                document.getElementById('gc-visitors-stats').textContent = '—';
+                document.getElementById('gc-pageviews-stats').textContent = '—';
+            })
+            .finally(() => { gcDone = true; tryShow(); });
 
             // Supabase — app stats
-            const ctrl = new AbortController();
+            const ctrl  = new AbortController();
             const timer = setTimeout(() => ctrl.abort(), 8000);
             fetch('https://lovrkeogsaxihyszaaom.supabase.co/functions/v1/website-stats', {
-                cache: 'no-store',
-                signal: ctrl.signal,
+                cache: 'no-store', signal: ctrl.signal,
             })
             .finally(() => clearTimeout(timer))
             .then(r => { if (!r.ok) throw r; return r.json(); })
             .then(data => {
-                const fmt = n => (typeof n === 'number' ? n.toLocaleString() : '—');
-                const usersEl   = document.getElementById('total-users-stats');
-                const entriesEl = document.getElementById('total-entries-stats');
-                const moodEl    = document.getElementById('mood-stats');
-                if (usersEl)   usersEl.textContent   = fmt(data.total_users);
-                if (entriesEl) entriesEl.textContent = fmt(data.total_entries);
-                if (moodEl)    moodEl.textContent    = data.top_mood_this_week || '—';
+                appUsers = typeof data.total_users   === 'number' ? data.total_users   : 0;
+                entries  = typeof data.total_entries === 'number' ? data.total_entries : 0;
 
-                // Countries (if Supabase returns them)
+                document.getElementById('total-users-stats').textContent  = appUsers.toLocaleString();
+                document.getElementById('total-entries-stats').textContent = entries.toLocaleString();
+                document.getElementById('mood-stats').textContent          = data.top_mood_this_week || '—';
+
+                // Countries
                 const tbody = document.getElementById('countries-body');
-                if (tbody) {
-                    tbody.innerHTML = '';
-                    const list = (data.visitor_countries && Array.isArray(data.visitor_countries))
-                        ? [...data.visitor_countries].sort((a, b) => b.count - a.count)
-                        : [];
-                    if (list.length === 0) {
-                        tbody.innerHTML = `<tr><td colspan="2" style="padding:1rem;text-align:center;opacity:0.5;">
-                            Geographic data not available yet — check the full dashboard ↗</td></tr>`;
-                    } else {
-                        list.forEach(item => {
-                            const row = document.createElement('tr');
-                            row.innerHTML = `<td>${item.country}</td><td style="text-align:right;">${item.count.toLocaleString()}</td>`;
-                            tbody.appendChild(row);
-                        });
-                    }
+                tbody.innerHTML = '';
+                const list = Array.isArray(data.visitor_countries)
+                    ? [...data.visitor_countries].sort((a, b) => b.count - a.count)
+                    : [];
+                if (list.length === 0) {
+                    tbody.innerHTML = `<tr><td colspan="2" style="padding:1rem;text-align:center;opacity:0.5;">
+                        Geographic data not yet available — <a href="https://squeakapp.goatcounter.com/" target="_blank" style="color:var(--accent-color);">view full dashboard ↗</a>
+                    </td></tr>`;
+                } else {
+                    list.forEach(({ country, count }) => {
+                        const row = document.createElement('tr');
+                        row.innerHTML = `<td>${country}</td><td style="text-align:right;">${count.toLocaleString()}</td>`;
+                        tbody.appendChild(row);
+                    });
                 }
-
-                // Re-draw chart with app data merged in
-                const gcEl = document.getElementById('gc-visitors-stats');
-                const visitorsNow = gcEl ? (parseInt(gcEl.textContent.replace(/,/g,'')) || 0) : 0;
-                generateUsersChart(visitorsNow, data.total_users ?? 0, data.total_entries ?? 0);
-                show();
             })
             .catch(err => {
                 console.error('Supabase error:', err);
-                const errorEl = document.getElementById('api-error-message');
-                if (errorEl) {
-                    errorEl.textContent = 'Could not load app statistics.';
-                    errorEl.style.display = 'block';
-                }
-                show();
-            });
+                document.getElementById('api-error-message').textContent = 'Could not load app statistics.';
+                document.getElementById('api-error-message').style.display = 'block';
+            })
+            .finally(() => { supaDone = true; tryShow(); });
         };
         
         // Chart — horizontal bar comparing real numbers from both APIs

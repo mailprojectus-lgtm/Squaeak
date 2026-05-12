@@ -178,8 +178,9 @@
         .animated-text {
             font-size: 32px;
             line-height: 1.5;
-            max-width: 600px;
+            max-width: 560px;
             margin: 0.3em 0;
+            text-wrap: balance;
         }
 
         .fade-in-up {
@@ -382,7 +383,7 @@
             position: fixed;
             top: 0; left: 0;
             width: 100%; height: 100%;
-            display: none;
+            display: flex;
             flex-direction: column;
             align-items: center;
             padding: 3rem 1.5rem 5rem;
@@ -390,8 +391,16 @@
             background-color: var(--background-light);
             overflow-y: auto;
             z-index: 200;
+            opacity: 0;
+            transform: translateY(36px);
+            pointer-events: none;
+            transition: opacity 0.4s ease, transform 0.4s cubic-bezier(0.32, 0.72, 0, 1);
         }
-        #stats-page.visible { display: flex; }
+        #stats-page.visible {
+            opacity: 1;
+            transform: translateY(0);
+            pointer-events: auto;
+        }
 
         /* ── Stats page ── */
         .stats-page-wrapper {
@@ -1017,13 +1026,16 @@
         }
 
         // ── Wheel (desktop trackpad / mouse) ──
-        let wheelLock = false;
+        // Timestamp-based cooldown avoids race conditions with rapid trackpad events.
+        let lastNav = 0;
         document.addEventListener('wheel', e => {
+            if (document.getElementById('stats-page').classList.contains('visible')) return;
             e.preventDefault();
-            if (wheelLock) return;
-            wheelLock = true;
+            const now = Date.now();
+            if (now - lastNav < DUR + 100) return;
+            if (Math.abs(e.deltaY) < 3) return;
+            lastNav = now;
             goTo(current + (e.deltaY > 0 ? 1 : -1));
-            setTimeout(() => { wheelLock = false; }, DUR + 80);
         }, { passive: false });
 
         // ── Touch swipe (mobile) ──
@@ -1033,6 +1045,7 @@
             touchT = Date.now();
         }, { passive: true });
         document.addEventListener('touchend', e => {
+            if (document.getElementById('stats-page').classList.contains('visible')) return;
             const dy = touchY - e.changedTouches[0].clientY;
             const dt = Date.now() - touchT;
             if (Math.abs(dy) > 45 && dt < 500) goTo(current + (dy > 0 ? 1 : -1));
@@ -1040,6 +1053,7 @@
 
         // ── Keyboard ──
         document.addEventListener('keydown', e => {
+            if (document.getElementById('stats-page').classList.contains('visible')) return;
             const map = { ArrowDown: 1, ArrowUp: -1, PageDown: 1, PageUp: -1 };
             if (e.key in map) { e.preventDefault(); goTo(current + map[e.key]); }
         });
@@ -1287,11 +1301,12 @@
         updateStatsDisplay();
 
         const openStats = () => {
-            document.getElementById('stats-page').classList.add('visible');
-            // Reset to loading state each open
+            const page = document.getElementById('stats-page');
+            page.scrollTop = 0;
             document.getElementById('loading-stats').style.display = 'block';
             document.getElementById('stats-content').style.display = 'none';
             document.getElementById('api-error-message').style.display = 'none';
+            page.classList.add('visible');
             window.history.pushState({page: 'stats'}, '', '#stats');
             updateStatsDisplayOnPage();
         };

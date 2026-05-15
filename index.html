@@ -481,10 +481,11 @@
             color: var(--ink-light);
             opacity: 0.5;
             margin: 4rem 0;
+            transition: opacity 0.25s ease;
         }
         #stats-content {
             opacity: 0;
-            transition: opacity 0.35s ease;
+            transition: opacity 0.7s ease;
         }
         #stats-content.loaded {
             opacity: 1;
@@ -566,6 +567,11 @@
         }
         .flag-bubble:hover::after {
             opacity: 1;
+        }
+        .flag-bubble img {
+            display: block;
+            border-radius: 3px;
+            height: auto;
         }
         @media (max-width: 600px) {
             .stats-grid { grid-template-columns: 1fr; }
@@ -1452,14 +1458,17 @@
                     } else {
                         const maxCount = locs[0].count ?? 1;
                         locs.forEach(({ id, name, count }) => {
-                            const flag = toFlag(id);
-                            if (!flag) return;
+                            if (!id || id.length !== 2) return;
                             const ratio = Math.sqrt((count ?? 0) / maxCount);
-                            const fontSize = (1.1 + ratio * 3.4).toFixed(2);
+                            const sizePx = Math.round(22 + ratio * 58);
                             const span = document.createElement('span');
                             span.className = 'flag-bubble';
-                            span.style.fontSize = fontSize + 'rem';
-                            span.textContent = flag;
+                            const img = document.createElement('img');
+                            img.src = 'https://flagcdn.com/w80/' + id.toLowerCase() + '.png';
+                            img.alt = name || id;
+                            img.style.width = sizePx + 'px';
+                            img.loading = 'lazy';
+                            span.appendChild(img);
                             span.dataset.tooltip = (name || id) + ': ' + (count ?? 0).toLocaleString();
                             flagsEl.appendChild(span);
                         });
@@ -1475,13 +1484,15 @@
                     el.style.display = 'block';
                 }
 
-                // Reveal content BEFORE creating the chart so the canvas has real dimensions.
-                // Double-rAF ensures the browser computes layout before Chart.js measures the canvas.
-                document.getElementById('loading-stats').style.display = 'none';
+                // Fade out loading text, then reveal content with opacity transition.
+                // void offsetHeight forces a synchronous reflow so the CSS transition fires correctly.
+                const loadingEl = document.getElementById('loading-stats');
                 const contentEl = document.getElementById('stats-content');
-                contentEl.style.display = 'block';
-
-                requestAnimationFrame(() => {
+                loadingEl.style.opacity = '0';
+                setTimeout(() => {
+                    loadingEl.style.display = 'none';
+                    contentEl.style.display = 'block';
+                    void contentEl.offsetHeight;
                     requestAnimationFrame(() => {
                         if (chartLabels.length) {
                             if (visitorsChartInstance) { visitorsChartInstance.destroy(); visitorsChartInstance = null; }
@@ -1569,7 +1580,7 @@
                         }
                         contentEl.classList.add('loaded');
                     });
-                });
+                }, 200);
             })
             .finally(() => {
                 // Fallback: hide loading if .then() didn't run (all-rejected path)

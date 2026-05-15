@@ -1395,15 +1395,15 @@
                 // 2. Compute weekly chart data (deferred — chart created after content is visible)
                 let chartLabels = [], chartValues = [];
                 if (totalRes.status === 'fulfilled') {
-                    const hits = totalRes.value.hits || [];
+                    const hits = totalRes.value.stats || [];
                     const weekMap = new Map();
-                    hits.forEach(({ day, count_unique, count }) => {
+                    hits.forEach(({ day, daily }) => {
                         const d   = new Date(day + 'T00:00:00Z');
                         const dow = d.getUTCDay();
                         const mon = new Date(d);
                         mon.setUTCDate(d.getUTCDate() + (dow === 0 ? -6 : 1 - dow));
                         const key = mon.toISOString().split('T')[0];
-                        weekMap.set(key, (weekMap.get(key) || 0) + (count_unique ?? count ?? 0));
+                        weekMap.set(key, (weekMap.get(key) || 0) + (daily ?? 0));
                     });
                     chartLabels = [...weekMap.keys()].sort();
                     chartValues = chartLabels.map(k => weekMap.get(k));
@@ -1413,13 +1413,13 @@
                 const tbody = document.getElementById('countries-body');
                 tbody.innerHTML = '';
                 if (locRes.status === 'fulfilled') {
-                    const locs = [...(locRes.value.locations || [])].sort((a, b) =>
-                        (b.count_unique ?? b.count ?? 0) - (a.count_unique ?? a.count ?? 0));
+                    const locs = [...(locRes.value.stats || [])].sort((a, b) =>
+                        (b.count ?? 0) - (a.count ?? 0));
                     if (locs.length === 0) {
                         tbody.innerHTML = `<tr><td colspan="2" style="padding:1.2rem;text-align:center;opacity:0.45;">No country data yet.</td></tr>`;
                     } else {
-                        locs.forEach(({ id, name, count_unique, count }) => {
-                            const n   = count_unique ?? count ?? 0;
+                        locs.forEach(({ id, name, count }) => {
+                            const n   = count ?? 0;
                             const row = document.createElement('tr');
                             row.innerHTML = `<td>${toFlag(id) ? toFlag(id) + ' ' : ''}${name || id}</td><td style="text-align:right;">${n.toLocaleString()}</td>`;
                             tbody.appendChild(row);

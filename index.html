@@ -386,7 +386,7 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            padding: 3rem 1.5rem 5rem;
+            padding: 3rem 1.5rem 9rem;
             box-sizing: border-box;
             background-color: var(--background-light);
             overflow-y: auto;
@@ -482,6 +482,13 @@
             opacity: 0.5;
             margin: 4rem 0;
         }
+        #stats-content {
+            opacity: 0;
+            transition: opacity 0.35s ease;
+        }
+        #stats-content.loaded {
+            opacity: 1;
+        }
         .stats-error {
             color: #c0392b;
             font-family: var(--handwritten-font);
@@ -498,7 +505,7 @@
         .stats-link:hover { text-decoration: underline; }
         .stats-back-btn {
             position: fixed;
-            bottom: 24px;
+            bottom: 32px;
             left: 50%;
             transform: translateX(-50%);
             padding: 10px 24px;
@@ -1385,10 +1392,10 @@
                     document.getElementById('mood-stats').textContent          = d.top_mood_this_week || '—';
                 }
 
-                // 2. Visitors over time chart (GoatCounter stats/total → weekly groups)
+                // 2. Compute weekly chart data (deferred — chart created after content is visible)
+                let chartLabels = [], chartValues = [];
                 if (totalRes.status === 'fulfilled') {
                     const hits = totalRes.value.hits || [];
-
                     const weekMap = new Map();
                     hits.forEach(({ day, count_unique, count }) => {
                         const d   = new Date(day + 'T00:00:00Z');
@@ -1398,52 +1405,8 @@
                         const key = mon.toISOString().split('T')[0];
                         weekMap.set(key, (weekMap.get(key) || 0) + (count_unique ?? count ?? 0));
                     });
-
-                    const labels = [...weekMap.keys()].sort();
-                    const values = labels.map(k => weekMap.get(k));
-
-                    if (visitorsChartInstance) { visitorsChartInstance.destroy(); visitorsChartInstance = null; }
-
-                    const ctx = document.getElementById('visitorsChart').getContext('2d');
-                    visitorsChartInstance = new Chart(ctx, {
-                        type: 'line',
-                        data: {
-                            labels: labels.map(iso => {
-                                const dt = new Date(iso + 'T00:00:00Z');
-                                return dt.toLocaleDateString('en', { month: 'short', day: 'numeric', timeZone: 'UTC' });
-                            }),
-                            datasets: [{
-                                label: 'Unique visitors',
-                                data: values,
-                                borderColor: '#9CADDF',
-                                backgroundColor: 'rgba(156,173,223,0.12)',
-                                borderWidth: 2,
-                                pointRadius: 4,
-                                pointBackgroundColor: '#9CADDF',
-                                tension: 0.35,
-                                fill: true,
-                            }],
-                        },
-                        options: {
-                            responsive: true,
-                            maintainAspectRatio: false,
-                            plugins: {
-                                legend: { display: false },
-                                tooltip: { mode: 'index', intersect: false },
-                            },
-                            scales: {
-                                x: {
-                                    grid: { color: 'rgba(92,92,92,0.1)' },
-                                    ticks: { font: { family: "'Walter Turncoat', cursive" }, color: '#5C5C5C' },
-                                },
-                                y: {
-                                    beginAtZero: true,
-                                    grid: { color: 'rgba(92,92,92,0.1)' },
-                                    ticks: { font: { family: "'Walter Turncoat', cursive" }, color: '#5C5C5C', precision: 0 },
-                                },
-                            },
-                        },
-                    });
+                    chartLabels = [...weekMap.keys()].sort();
+                    chartValues = chartLabels.map(k => weekMap.get(k));
                 }
 
                 // 3. Countries table (GoatCounter stats/locations)
@@ -1472,10 +1435,65 @@
                     el.textContent = 'Could not load statistics. Please try again later.';
                     el.style.display = 'block';
                 }
+
+                // Reveal content BEFORE creating the chart so the canvas has real dimensions.
+                // Double-rAF ensures the browser computes layout before Chart.js measures the canvas.
+                document.getElementById('loading-stats').style.display = 'none';
+                const contentEl = document.getElementById('stats-content');
+                contentEl.style.display = 'block';
+
+                requestAnimationFrame(() => {
+                    requestAnimationFrame(() => {
+                        if (chartLabels.length) {
+                            if (visitorsChartInstance) { visitorsChartInstance.destroy(); visitorsChartInstance = null; }
+                            const ctx = document.getElementById('visitorsChart').getContext('2d');
+                            visitorsChartInstance = new Chart(ctx, {
+                                type: 'line',
+                                data: {
+                                    labels: chartLabels.map(iso => {
+                                        const dt = new Date(iso + 'T00:00:00Z');
+                                        return dt.toLocaleDateString('en', { month: 'short', day: 'numeric', timeZone: 'UTC' });
+                                    }),
+                                    datasets: [{
+                                        label: 'Unique visitors',
+                                        data: chartValues,
+                                        borderColor: '#9CADDF',
+                                        backgroundColor: 'rgba(156,173,223,0.12)',
+                                        borderWidth: 2,
+                                        pointRadius: 4,
+                                        pointBackgroundColor: '#9CADDF',
+                                        tension: 0.35,
+                                        fill: true,
+                                    }],
+                                },
+                                options: {
+                                    responsive: true,
+                                    maintainAspectRatio: false,
+                                    plugins: {
+                                        legend: { display: false },
+                                        tooltip: { mode: 'index', intersect: false },
+                                    },
+                                    scales: {
+                                        x: {
+                                            grid: { color: 'rgba(92,92,92,0.1)' },
+                                            ticks: { font: { family: "'Walter Turncoat', cursive" }, color: '#5C5C5C' },
+                                        },
+                                        y: {
+                                            beginAtZero: true,
+                                            grid: { color: 'rgba(92,92,92,0.1)' },
+                                            ticks: { font: { family: "'Walter Turncoat', cursive" }, color: '#5C5C5C', precision: 0 },
+                                        },
+                                    },
+                                },
+                            });
+                        }
+                        contentEl.classList.add('loaded');
+                    });
+                });
             })
             .finally(() => {
+                // Fallback: hide loading if .then() didn't run (all-rejected path)
                 document.getElementById('loading-stats').style.display = 'none';
-                document.getElementById('stats-content').style.display = 'block';
             });
         };
         

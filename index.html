@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en" dir="ltr">
 <head>
     <meta charset="UTF-8">
@@ -386,7 +386,7 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            padding: 3rem 1.5rem 9rem;
+            padding: 5rem 1.5rem 5rem;
             box-sizing: border-box;
             background-color: var(--background-light);
             overflow-y: auto;
@@ -505,24 +505,67 @@
         .stats-link:hover { text-decoration: underline; }
         .stats-back-btn {
             position: fixed;
-            bottom: 32px;
-            left: 50%;
-            transform: translateX(-50%);
-            padding: 10px 24px;
+            top: 20px;
+            left: 20px;
+            padding: 8px 18px;
             background-color: var(--background-light);
             border: 1.5px solid var(--ink-light);
             border-radius: 12px;
             color: var(--ink-light);
             font-family: var(--handwritten-font);
-            font-size: 1rem;
+            font-size: 0.95rem;
             cursor: pointer;
             box-shadow: 2px 2px 0px 0px var(--ink-light);
             transition: all 0.2s ease-out;
             white-space: nowrap;
+            z-index: 210;
         }
         .stats-back-btn:hover {
-            transform: translateX(-50%) translateY(-1px);
+            transform: translateY(-1px);
             box-shadow: 3px 3px 0px 0px var(--ink-light);
+        }
+        .flags-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.3rem 0.5rem;
+            align-items: center;
+            justify-content: center;
+            padding: 0.8rem 0.2rem 0.4rem;
+            min-height: 80px;
+        }
+        .flag-bubble {
+            position: relative;
+            cursor: default;
+            line-height: 1;
+            display: inline-block;
+            transition: transform 0.15s ease;
+        }
+        .flag-bubble:hover {
+            transform: scale(1.18);
+            z-index: 5;
+        }
+        .flag-bubble::after {
+            content: attr(data-tooltip);
+            position: absolute;
+            bottom: calc(100% + 6px);
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--background-light);
+            border: 1.5px solid var(--ink-light);
+            border-radius: 8px;
+            padding: 4px 10px;
+            font-family: var(--handwritten-font);
+            font-size: 0.82rem;
+            color: var(--ink-light);
+            white-space: nowrap;
+            box-shadow: 2px 2px 0px 0px var(--ink-light);
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.15s ease;
+            z-index: 20;
+        }
+        .flag-bubble:hover::after {
+            opacity: 1;
         }
         @media (max-width: 600px) {
             .stats-grid { grid-template-columns: 1fr; }
@@ -941,20 +984,10 @@
                     </div>
                 </div>
 
-                <!-- 3. Visitors by country -->
+                <!-- 3. Visitors by country (flag bubbles sized by visit count) -->
                 <div class="table-card" style="margin-bottom:3rem;">
                     <h3>Visitors by Country</h3>
-                    <table id="countries-table">
-                        <thead>
-                            <tr>
-                                <th style="text-align:left;">Country</th>
-                                <th style="text-align:right;">Visitors</th>
-                            </tr>
-                        </thead>
-                        <tbody id="countries-body">
-                            <tr><td colspan="2" style="padding:1rem;text-align:center;opacity:0.5;">Loading…</td></tr>
-                        </tbody>
-                    </table>
+                    <div id="flags-container" class="flags-container"></div>
                 </div>
 
                 <p id="api-error-message" class="stats-error" style="display:none;"></p>
@@ -1409,24 +1442,30 @@
                     chartValues = chartLabels.map(k => weekMap.get(k));
                 }
 
-                // 3. Countries table (GoatCounter stats/locations)
-                const tbody = document.getElementById('countries-body');
-                tbody.innerHTML = '';
+                // 3. Visitors by country — flag bubbles sized by sqrt(count/max)
+                const flagsEl = document.getElementById('flags-container');
+                flagsEl.innerHTML = '';
                 if (locRes.status === 'fulfilled') {
-                    const locs = [...(locRes.value.stats || [])].sort((a, b) =>
-                        (b.count ?? 0) - (a.count ?? 0));
+                    const locs = [...(locRes.value.stats || [])].sort((a, b) => (b.count ?? 0) - (a.count ?? 0));
                     if (locs.length === 0) {
-                        tbody.innerHTML = `<tr><td colspan="2" style="padding:1.2rem;text-align:center;opacity:0.45;">No country data yet.</td></tr>`;
+                        flagsEl.innerHTML = '<span style="opacity:0.45;font-family:var(--handwritten-font);font-size:0.9rem;">No country data yet.</span>';
                     } else {
+                        const maxCount = locs[0].count ?? 1;
                         locs.forEach(({ id, name, count }) => {
-                            const n   = count ?? 0;
-                            const row = document.createElement('tr');
-                            row.innerHTML = `<td>${toFlag(id) ? toFlag(id) + ' ' : ''}${name || id}</td><td style="text-align:right;">${n.toLocaleString()}</td>`;
-                            tbody.appendChild(row);
+                            const flag = toFlag(id);
+                            if (!flag) return;
+                            const ratio = Math.sqrt((count ?? 0) / maxCount);
+                            const fontSize = (1.1 + ratio * 3.4).toFixed(2);
+                            const span = document.createElement('span');
+                            span.className = 'flag-bubble';
+                            span.style.fontSize = fontSize + 'rem';
+                            span.textContent = flag;
+                            span.dataset.tooltip = (name || id) + ': ' + (count ?? 0).toLocaleString();
+                            flagsEl.appendChild(span);
                         });
                     }
                 } else {
-                    tbody.innerHTML = `<tr><td colspan="2" style="padding:1.2rem;text-align:center;opacity:0.45;">Could not load country data.</td></tr>`;
+                    flagsEl.innerHTML = '<span style="opacity:0.45;font-family:var(--handwritten-font);font-size:0.9rem;">Could not load country data.</span>';
                 }
 
                 // Surface error only if everything failed
@@ -1446,8 +1485,28 @@
                     requestAnimationFrame(() => {
                         if (chartLabels.length) {
                             if (visitorsChartInstance) { visitorsChartInstance.destroy(); visitorsChartInstance = null; }
+                            const crosshairPlugin = {
+                                id: 'statsVerticalLine',
+                                afterDraw(chart) {
+                                    const active = chart.tooltip._active;
+                                    if (!active || !active.length) return;
+                                    const c = chart.ctx;
+                                    const x = active[0].element.x;
+                                    const { top, bottom } = chart.chartArea;
+                                    c.save();
+                                    c.strokeStyle = 'rgba(92,92,92,0.2)';
+                                    c.lineWidth = 1.5;
+                                    c.setLineDash([5, 4]);
+                                    c.beginPath();
+                                    c.moveTo(x, top);
+                                    c.lineTo(x, bottom);
+                                    c.stroke();
+                                    c.restore();
+                                }
+                            };
                             const ctx = document.getElementById('visitorsChart').getContext('2d');
                             visitorsChartInstance = new Chart(ctx, {
+                                plugins: [crosshairPlugin],
                                 type: 'line',
                                 data: {
                                     labels: chartLabels.map(iso => {
@@ -1461,7 +1520,11 @@
                                         backgroundColor: 'rgba(156,173,223,0.12)',
                                         borderWidth: 2,
                                         pointRadius: 4,
+                                        pointHoverRadius: 6,
                                         pointBackgroundColor: '#9CADDF',
+                                        pointHoverBackgroundColor: '#9CADDF',
+                                        pointHoverBorderColor: '#F7F4EE',
+                                        pointHoverBorderWidth: 2,
                                         tension: 0.35,
                                         fill: true,
                                     }],
@@ -1469,9 +1532,26 @@
                                 options: {
                                     responsive: true,
                                     maintainAspectRatio: false,
+                                    interaction: { mode: 'index', intersect: false },
                                     plugins: {
                                         legend: { display: false },
-                                        tooltip: { mode: 'index', intersect: false },
+                                        tooltip: {
+                                            mode: 'index',
+                                            intersect: false,
+                                            backgroundColor: '#F7F4EE',
+                                            borderColor: '#5C5C5C',
+                                            borderWidth: 1.5,
+                                            titleFont: { family: "'Walter Turncoat', cursive", size: 12 },
+                                            bodyFont:  { family: "'Walter Turncoat', cursive", size: 14 },
+                                            titleColor: '#5C5C5C',
+                                            bodyColor: '#9CADDF',
+                                            padding: { x: 12, y: 8 },
+                                            cornerRadius: 10,
+                                            caretSize: 5,
+                                            callbacks: {
+                                                label: item => ' ' + item.raw + ' visitors',
+                                            },
+                                        },
                                     },
                                     scales: {
                                         x: {

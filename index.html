@@ -532,32 +532,47 @@
             transform: translateY(-1px);
             box-shadow: 3px 3px 0px 0px var(--ink-light);
         }
+        .flags-card {
+            position: relative;
+            padding: 0;
+            overflow: hidden;
+            height: 420px;
+        }
         .flags-canvas {
+            position: absolute;
+            inset: 0;
             display: block;
             width: 100%;
-            height: 320px;
+            height: 100%;
             cursor: pointer;
-        }
-        .flags-info {
-            text-align: center;
-            font-family: var(--handwritten-font);
-            font-size: 0.88rem;
-            color: var(--ink-light);
-            opacity: 0.4;
-            padding: 8px 1.4rem 1.2rem;
-            min-height: 1.6rem;
-            transition: opacity 0.25s ease;
-        }
-        .flags-info.active {
-            opacity: 1;
         }
         .flags-card-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
             padding: 1.4rem 1.4rem 0.6rem;
+            position: relative;
+            z-index: 2;
         }
         .flags-card-header h3 { margin: 0; }
+        .flags-info {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            text-align: center;
+            font-family: var(--handwritten-font);
+            font-size: 0.88rem;
+            color: var(--ink-light);
+            opacity: 0.4;
+            padding: 8px 1.4rem 1.2rem;
+            transition: opacity 0.25s ease;
+            z-index: 2;
+            pointer-events: none;
+        }
+        .flags-info.active {
+            opacity: 1;
+        }
         .flags-settings-wrap {
             position: relative;
         }
@@ -970,11 +985,6 @@
                 <a href="#" class="store-button" data-i18n="appStore">App Store</a>
                 <a href="#" class="store-button" data-i18n="googlePlay">Google Play</a>
             </div>
-            <div class="social-links">
-                <a href="#" title="TikTok — Coming Soon" aria-label="TikTok (coming soon)" style="opacity:0.4; cursor:not-allowed;" tabindex="-1">
-                    <img src="tiktok.png" alt="TikTok" width="24" height="24">
-                </a>
-            </div>
             <footer class="footer-note">
                 <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap; justify-content:center;">
                     <a href="#stats" id="visitor-stats-link" class="visitor-counter-link" title="View detailed visitor statistics" aria-label="View visitor statistics">
@@ -1023,7 +1033,7 @@
                 </div>
 
                 <!-- 3. Visitors by country (canvas particle swarm) -->
-                <div class="table-card" style="margin-bottom:3rem; padding:0; overflow:hidden;">
+                <div class="table-card flags-card" style="margin-bottom:3rem;">
                     <div class="flags-card-header">
                         <h3>Visitors by Country</h3>
                         <div class="flags-settings-wrap">
@@ -1639,8 +1649,9 @@
 
                     function setupFlagsCanvas() {
                         const w = flagsCanvas.offsetWidth;
-                        if (w > 0) flagsCanvas.width = w;
-                        flagsCanvas.height = 320;
+                        const h = flagsCanvas.offsetHeight;
+                        if (w > 0) flagsCanvas.width  = w;
+                        if (h > 0) flagsCanvas.height = h;
                     }
 
                     let swarmParticles = [];

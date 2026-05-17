@@ -553,6 +553,57 @@
         .flags-info.active {
             opacity: 1;
         }
+        .flags-wrap {
+            position: relative;
+        }
+        .flags-settings-btn {
+            position: absolute;
+            top: 6px;
+            right: 6px;
+            width: 28px;
+            height: 28px;
+            padding: 0;
+            border: 1.5px solid var(--ink-light);
+            border-radius: 8px;
+            background: var(--background-light);
+            color: var(--ink-light);
+            font-size: 13px;
+            line-height: 1;
+            cursor: pointer;
+            box-shadow: 1px 1px 0px 0px var(--ink-light);
+            opacity: 0.5;
+            transition: opacity 0.15s;
+            z-index: 5;
+        }
+        .flags-settings-btn:hover { opacity: 1; }
+        .flags-settings {
+            position: absolute;
+            top: 40px;
+            right: 6px;
+            background: var(--background-light);
+            border: 1.5px solid var(--ink-light);
+            border-radius: 12px;
+            box-shadow: 2px 2px 0px 0px var(--ink-light);
+            padding: 12px 14px;
+            width: 186px;
+            z-index: 10;
+            font-family: var(--handwritten-font);
+            color: var(--ink-light);
+        }
+        .flags-setting { margin-bottom: 10px; }
+        .flags-setting:last-child { margin-bottom: 0; }
+        .flags-setting-row {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.78rem;
+            margin-bottom: 3px;
+            opacity: 0.8;
+        }
+        .flags-setting input[type="range"] {
+            width: 100%;
+            accent-color: var(--accent-color);
+            cursor: pointer;
+        }
         @media (max-width: 600px) {
             .stats-grid { grid-template-columns: 1fr; }
         }
@@ -973,7 +1024,28 @@
                 <!-- 3. Visitors by country (canvas particle swarm) -->
                 <div class="table-card" style="margin-bottom:3rem;">
                     <h3>Visitors by Country</h3>
-                    <canvas id="flags-canvas" class="flags-canvas"></canvas>
+                    <div class="flags-wrap">
+                        <canvas id="flags-canvas" class="flags-canvas"></canvas>
+                        <button id="flags-settings-btn" class="flags-settings-btn" title="Physics settings">⚙</button>
+                        <div id="flags-settings" class="flags-settings" hidden>
+                            <div class="flags-setting">
+                                <div class="flags-setting-row"><span>Gravity</span><span id="fgs-g-v">5</span></div>
+                                <input id="fgs-g" type="range" min="0" max="10" step="0.1" value="5">
+                            </div>
+                            <div class="flags-setting">
+                                <div class="flags-setting-row"><span>Push</span><span id="fgs-s-v">5</span></div>
+                                <input id="fgs-s" type="range" min="0" max="10" step="0.1" value="5">
+                            </div>
+                            <div class="flags-setting">
+                                <div class="flags-setting-row"><span>Drift</span><span id="fgs-d-v">5</span></div>
+                                <input id="fgs-d" type="range" min="0" max="10" step="0.1" value="5">
+                            </div>
+                            <div class="flags-setting">
+                                <div class="flags-setting-row"><span>Inertia</span><span id="fgs-f-v">8</span></div>
+                                <input id="fgs-f" type="range" min="0" max="10" step="0.1" value="8">
+                            </div>
+                        </div>
+                    </div>
                     <div id="flags-info" class="flags-info">click a ball to see country details</div>
                 </div>
 
@@ -1588,6 +1660,7 @@
                     }
 
                     let pinnedParticle = null, isDragging = false, swarmRaf = null;
+                    let G = 800, scatterF = 4, drift = 0.12, damping = 0.93;
                     const infoEl = document.getElementById('flags-info');
 
                     function setSwarmInfo(country) {
@@ -1615,8 +1688,8 @@
                             if (p === pinnedParticle) return;
                             const dx = p.x - pinnedParticle.x, dy = p.y - pinnedParticle.y;
                             const d = Math.hypot(dx, dy) || 1;
-                            p.vx += (dx/d) * (3 + Math.random()*2);
-                            p.vy += (dy/d) * (3 + Math.random()*2);
+                            p.vx += (dx/d) * scatterF * (0.75 + Math.random()*0.5);
+                            p.vy += (dy/d) * scatterF * (0.75 + Math.random()*0.5);
                         });
                     }
 
@@ -1673,13 +1746,13 @@
                                 const dx = pinnedParticle.x - p.x, dy = pinnedParticle.y - p.y;
                                 const d2 = dx*dx + dy*dy || 1;
                                 const d  = Math.sqrt(d2);
-                                const f  = Math.min(0.5, 800 / d2);
+                                const f  = Math.min(G / 1600, G / d2);
                                 p.vx += (dx/d)*f; p.vy += (dy/d)*f;
                             } else {
-                                p.vx += (Math.random()-0.5)*0.12;
-                                p.vy += (Math.random()-0.5)*0.12;
+                                p.vx += (Math.random()-0.5)*drift;
+                                p.vy += (Math.random()-0.5)*drift;
                             }
-                            p.vx *= 0.93; p.vy *= 0.93;
+                            p.vx *= damping; p.vy *= damping;
                             const spd = Math.hypot(p.vx, p.vy);
                             if (spd > 5) { p.vx *= 5/spd; p.vy *= 5/spd; }
                             p.x += p.vx; p.y += p.vy;
@@ -1729,6 +1802,30 @@
                         setupFlagsCanvas();
                         spawnSwarm();
                         drawSwarm();
+
+                        // ── Settings panel ──
+                        const settingsBtn   = document.getElementById('flags-settings-btn');
+                        const settingsPanel = document.getElementById('flags-settings');
+                        settingsBtn.addEventListener('click', e => {
+                            e.stopPropagation();
+                            settingsPanel.hidden = !settingsPanel.hidden;
+                        });
+                        function onDocDown(e) {
+                            if (!settingsPanel.hidden && !settingsPanel.contains(e.target) && e.target !== settingsBtn)
+                                settingsPanel.hidden = true;
+                        }
+                        document.addEventListener('pointerdown', onDocDown);
+                        function bindSlider(id, valId, apply) {
+                            document.getElementById(id).addEventListener('input', function() {
+                                document.getElementById(valId).textContent = this.value;
+                                apply(+this.value);
+                            });
+                        }
+                        bindSlider('fgs-g', 'fgs-g-v', v => { G        = v * 160; });
+                        bindSlider('fgs-s', 'fgs-s-v', v => { scatterF = v * 0.8; });
+                        bindSlider('fgs-d', 'fgs-d-v', v => { drift    = v * 0.024; });
+                        bindSlider('fgs-f', 'fgs-f-v', v => { damping  = 0.70 + v * 0.029; });
+
                         const swarmRO = new ResizeObserver(() => {
                             setupFlagsCanvas();
                             pinnedParticle = null;
@@ -1744,6 +1841,7 @@
                             flagsCanvas.removeEventListener('pointermove',   onPointerMove);
                             flagsCanvas.removeEventListener('pointerup',     onPointerUp);
                             flagsCanvas.removeEventListener('pointercancel', onPointerUp);
+                            document.removeEventListener('pointerdown', onDocDown);
                         };
                     }
 

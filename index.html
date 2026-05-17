@@ -511,6 +511,7 @@
         }
         .stats-link:hover { text-decoration: underline; }
         .stats-back-btn {
+            display: none;
             position: fixed;
             top: 20px;
             left: 20px;
@@ -531,78 +532,13 @@
             transform: translateY(-1px);
             box-shadow: 3px 3px 0px 0px var(--ink-light);
         }
-        @keyframes floatBall {
-            0%,100% { transform: translateY(0px); }
-            50%     { transform: translateY(-11px); }
-        }
-        @keyframes clusterDrift {
-            0%,100% { transform: translate(0px,   0px); }
-            25%     { transform: translate(7px,  -10px); }
-            50%     { transform: translate(0px,  -18px); }
-            75%     { transform: translate(-7px, -10px); }
-        }
-        .flags-container {
-            position: relative;
-            width: min(100%, 340px);
-            aspect-ratio: 1 / 1;
-            margin: 0.6rem auto 0.8rem;
-            overflow: visible;
-        }
-        .flags-inner {
-            position: absolute;
-            inset: 0;
-            animation: clusterDrift 13s ease-in-out infinite;
-        }
-        .flag-bubble {
-            position: absolute;
-            transform: translate(-50%, -50%);
-            cursor: default;
-            z-index: 1;
-        }
-        .flag-bubble:hover {
-            z-index: 10;
-        }
-        .flag-ball-inner {
+        .flags-canvas {
             display: block;
-            animation: floatBall var(--fd, 4s) ease-in-out infinite;
-            animation-delay: var(--fdel, 0s);
-        }
-        .flag-bubble:hover .flag-ball-inner {
-            animation-play-state: paused;
-        }
-        .flag-bubble::after {
-            content: attr(data-tooltip);
-            position: absolute;
-            bottom: calc(100% + 8px);
-            left: 50%;
-            transform: translateX(-50%);
-            background: var(--background-light);
-            border: 1.5px solid var(--ink-light);
-            border-radius: 8px;
-            padding: 4px 10px;
-            font-family: var(--handwritten-font);
-            font-size: 0.82rem;
-            color: var(--ink-light);
-            white-space: nowrap;
-            box-shadow: 2px 2px 0px 0px var(--ink-light);
-            pointer-events: none;
-            opacity: 0;
-            transition: opacity 0.15s ease;
-            z-index: 20;
-        }
-        .flag-bubble:hover::after {
-            opacity: 1;
-        }
-        .flag-bubble img {
-            display: block;
-            border-radius: 50%;
-            aspect-ratio: 1 / 1;
-            object-fit: cover;
-            box-shadow: 0 4px 14px rgba(0,0,0,0.22), 0 1px 4px rgba(0,0,0,0.12);
-            transition: filter 0.15s ease;
-        }
-        .flag-bubble:hover img {
-            filter: drop-shadow(0 8px 20px rgba(0,0,0,0.3));
+            width: 100%;
+            height: 300px;
+            cursor: pointer;
+            border-radius: 4px;
+            margin: 0.4rem 0 0.2rem;
         }
         @media (max-width: 600px) {
             .stats-grid { grid-template-columns: 1fr; }
@@ -1021,18 +957,18 @@
                     </div>
                 </div>
 
-                <!-- 3. Visitors by country (flag bubbles sized by visit count) -->
+                <!-- 3. Visitors by country (canvas particle swarm) -->
                 <div class="table-card" style="margin-bottom:3rem;">
                     <h3>Visitors by Country</h3>
-                    <div id="flags-container" class="flags-container"></div>
+                    <canvas id="flags-canvas" class="flags-canvas"></canvas>
                 </div>
 
                 <p id="api-error-message" class="stats-error" style="display:none;"></p>
             </div>
         </div>
-
-        <button id="go-back-btn" class="stats-back-btn">← Back to Homepage</button>
     </div>
+
+    <button id="go-back-btn" class="stats-back-btn">← Back to Homepage</button>
 
     <script>
     document.addEventListener('DOMContentLoaded', () => {
@@ -1393,12 +1329,14 @@
             document.getElementById('stats-content').style.display = 'none';
             document.getElementById('api-error-message').style.display = 'none';
             page.classList.add('visible');
+            document.getElementById('go-back-btn').style.display = 'block';
             window.history.pushState({page: 'stats'}, '', '#stats');
             updateStatsDisplayOnPage();
         };
 
         const closeStats = () => {
             document.getElementById('stats-page').classList.remove('visible');
+            document.getElementById('go-back-btn').style.display = 'none';
             window.history.pushState({page: 'home'}, '', '/');
         };
 
@@ -1479,56 +1417,10 @@
                     chartValues = chartLabels.map(k => weekMap.get(k));
                 }
 
-                // 3. Visitors by country — flag bubbles sized by sqrt(count/max)
-                const flagsEl = document.getElementById('flags-container');
-                flagsEl.innerHTML = '';
+                // 3. Visitors by country — data collected here; canvas particle swarm init'd after content shown
+                let validLocs = [];
                 if (locRes.status === 'fulfilled') {
-                    const locs = [...(locRes.value.stats || [])].sort((a, b) => (b.count ?? 0) - (a.count ?? 0));
-                    if (locs.length === 0) {
-                        flagsEl.innerHTML = '<span style="opacity:0.45;font-family:var(--handwritten-font);font-size:0.9rem;">No country data yet.</span>';
-                    } else {
-                        const maxCount = locs[0].count ?? 1;
-                        const inner = document.createElement('div');
-                        inner.className = 'flags-inner';
-                        flagsEl.appendChild(inner);
-                        const ringDefs = [
-                            { start: 0,  end: 1,   r: 0    },
-                            { start: 1,  end: 6,   r: 0.17 },
-                            { start: 6,  end: 14,  r: 0.32 },
-                            { start: 14, end: 100, r: 0.46 },
-                        ];
-                        locs.forEach(({ id, name, count }, idx) => {
-                            if (!id || id.length !== 2) return;
-                            const ratio = Math.sqrt((count ?? 0) / maxCount);
-                            const sizePx = Math.round(18 + ratio * 56);
-                            const ring = ringDefs.find(rd => idx >= rd.start && idx < rd.end) || ringDefs[ringDefs.length - 1];
-                            const countInRing = Math.min(locs.length, ring.end) - ring.start;
-                            const idxInRing = idx - ring.start;
-                            const angle = ring.r === 0 ? 0 : (idxInRing / Math.max(countInRing, 1)) * 2 * Math.PI + ring.start * 1.1 - Math.PI / 2;
-                            const pctX = 50 + ring.r * Math.cos(angle) * 100;
-                            const pctY = 50 + ring.r * Math.sin(angle) * 100;
-                            const span = document.createElement('span');
-                            span.className = 'flag-bubble';
-                            span.style.left = pctX.toFixed(1) + '%';
-                            span.style.top  = pctY.toFixed(1) + '%';
-                            const ballInner = document.createElement('span');
-                            ballInner.className = 'flag-ball-inner';
-                            ballInner.style.setProperty('--fd',   (3 + Math.random() * 2.5).toFixed(1) + 's');
-                            ballInner.style.setProperty('--fdel', '-' + (Math.random() * 3.5).toFixed(1) + 's');
-                            const img = document.createElement('img');
-                            img.src = 'https://flagcdn.com/w80/' + id.toLowerCase() + '.png';
-                            img.alt = name || id;
-                            img.style.width  = sizePx + 'px';
-                            img.style.height = sizePx + 'px';
-                            img.loading = 'lazy';
-                            ballInner.appendChild(img);
-                            span.appendChild(ballInner);
-                            span.dataset.tooltip = (name || id) + ': ' + (count ?? 0).toLocaleString();
-                            inner.appendChild(span);
-                        });
-                    }
-                } else {
-                    flagsEl.innerHTML = '<span style="opacity:0.45;font-family:var(--handwritten-font);font-size:0.9rem;">Could not load country data.</span>';
+                    validLocs = [...(locRes.value.stats || [])].sort((a, b) => (b.count ?? 0) - (a.count ?? 0));
                 }
 
                 // Surface error only if everything failed
@@ -1631,6 +1523,152 @@
                                 },
                             });
                         }
+                    // ── Canvas particle swarm: visitors by country ──
+                    if (window._flagsCleanup) { window._flagsCleanup(); window._flagsCleanup = null; }
+                    const flagsCanvas = document.getElementById('flags-canvas');
+                    const fctx = flagsCanvas.getContext('2d');
+                    const swarmRings = [
+                        { start: 0,  end: 1,   r: 0    },
+                        { start: 1,  end: 6,   r: 0.17 },
+                        { start: 6,  end: 14,  r: 0.32 },
+                        { start: 14, end: 100, r: 0.46 },
+                    ];
+                    const maxCnt = validLocs[0]?.count || 1;
+                    const swarmCountries = validLocs
+                        .filter(({ id }) => id && id.length === 2)
+                        .map(({ id, name, count }, idx) => ({
+                            id, name: name || id, count: count ?? 0, idx,
+                            ballCount: Math.max(1, Math.round((count ?? 0) / maxCnt * 20)),
+                            hue: (idx * 137.5) % 360,
+                        }));
+
+                    function setupFlagsCanvas() {
+                        const cw = Math.max((flagsCanvas.parentElement.clientWidth || 300) - 44, 180);
+                        flagsCanvas.width  = cw;
+                        flagsCanvas.height = 300;
+                    }
+
+                    let swarmCenters = [];
+                    function computeSwarmCenters() {
+                        const w = flagsCanvas.width, h = flagsCanvas.height;
+                        swarmCenters = swarmCountries.map(({ idx }) => {
+                            const ring = swarmRings.find(rd => idx >= rd.start && idx < rd.end) || swarmRings[swarmRings.length - 1];
+                            const cnt  = Math.min(swarmCountries.length, ring.end) - ring.start;
+                            const ir   = idx - ring.start;
+                            const ang  = ring.r === 0 ? 0 : (ir / Math.max(cnt, 1)) * 2 * Math.PI + ring.start * 1.1 - Math.PI / 2;
+                            return { x: w * (0.5 + ring.r * Math.cos(ang) * 0.42), y: h * (0.5 + ring.r * Math.sin(ang) * 0.42) };
+                        });
+                    }
+
+                    let swarmParticles = [];
+                    function spawnSwarm() {
+                        const w = flagsCanvas.width, h = flagsCanvas.height;
+                        swarmParticles = [];
+                        swarmCountries.forEach((c, ci) => {
+                            const ctr = swarmCenters[ci] || { x: w / 2, y: h / 2 };
+                            for (let i = 0; i < c.ballCount; i++) {
+                                const a = Math.random() * Math.PI * 2;
+                                const d = 20 + Math.random() * Math.min(w, h) * 0.3;
+                                swarmParticles.push({
+                                    x: Math.min(Math.max(ctr.x + Math.cos(a) * d, 8), w - 8),
+                                    y: Math.min(Math.max(ctr.y + Math.sin(a) * d, 8), h - 8),
+                                    vx: (Math.random() - 0.5) * 0.8,
+                                    vy: (Math.random() - 0.5) * 0.8,
+                                    ci,
+                                });
+                            }
+                        });
+                    }
+
+                    let swarmCollapsed = false, swarmAlpha = 0, swarmTimer = null, swarmRaf = null;
+
+                    function swarmScatter() {
+                        swarmCollapsed = false;
+                        clearTimeout(swarmTimer);
+                        swarmParticles.forEach(p => {
+                            const ctr = swarmCenters[p.ci];
+                            const dx = p.x - ctr.x, dy = p.y - ctr.y;
+                            const dist = Math.sqrt(dx * dx + dy * dy) || 1;
+                            const imp = 3 + Math.random() * 2;
+                            p.vx += (dx / dist) * imp + (Math.random() - 0.5) * 1.5;
+                            p.vy += (dy / dist) * imp + (Math.random() - 0.5) * 1.5;
+                        });
+                    }
+
+                    function drawSwarm() {
+                        const w = flagsCanvas.width, h = flagsCanvas.height;
+                        fctx.clearRect(0, 0, w, h);
+                        swarmAlpha += ((swarmCollapsed ? 1 : 0) - swarmAlpha) * 0.06;
+
+                        swarmParticles.forEach(p => {
+                            const ctr = swarmCenters[p.ci];
+                            if (swarmCollapsed) {
+                                const dx = ctr.x - p.x, dy = ctr.y - p.y;
+                                const dist = Math.sqrt(dx * dx + dy * dy) || 1;
+                                p.vx += (dx / dist) * Math.min(0.18, dist * 0.035);
+                                p.vy += (dy / dist) * Math.min(0.18, dist * 0.035);
+                            } else {
+                                p.vx += (Math.random() - 0.5) * 0.1;
+                                p.vy += (Math.random() - 0.5) * 0.1;
+                            }
+                            p.vx *= 0.93; p.vy *= 0.93;
+                            const spd = Math.sqrt(p.vx * p.vx + p.vy * p.vy);
+                            if (spd > 3) { p.vx *= 3 / spd; p.vy *= 3 / spd; }
+                            p.x += p.vx; p.y += p.vy;
+                            if (p.x < 6) { p.x = 6; p.vx = Math.abs(p.vx); }
+                            if (p.x > w - 6) { p.x = w - 6; p.vx = -Math.abs(p.vx); }
+                            if (p.y < 6) { p.y = 6; p.vy = Math.abs(p.vy); }
+                            if (p.y > h - 6) { p.y = h - 6; p.vy = -Math.abs(p.vy); }
+                            fctx.beginPath();
+                            fctx.arc(p.x, p.y, 5, 0, Math.PI * 2);
+                            fctx.fillStyle = `hsla(${swarmCountries[p.ci].hue},65%,58%,0.82)`;
+                            fctx.fill();
+                        });
+
+                        if (swarmAlpha > 0.02) {
+                            swarmCountries.forEach((c, ci) => {
+                                const ctr = swarmCenters[ci];
+                                fctx.globalAlpha = Math.min(swarmAlpha * 2, 1);
+                                fctx.font = "13px 'Walter Turncoat', cursive";
+                                fctx.fillStyle = '#5C5C5C';
+                                fctx.textAlign = 'center';
+                                fctx.fillText(`${toFlag(c.id)} ${c.name}: ${c.count.toLocaleString()}`, ctr.x, ctr.y - 14);
+                                fctx.globalAlpha = 1;
+                            });
+                        }
+
+                        swarmRaf = requestAnimationFrame(drawSwarm);
+                    }
+
+                    if (swarmCountries.length === 0) {
+                        setupFlagsCanvas();
+                        fctx.font = "14px 'Walter Turncoat', cursive";
+                        fctx.fillStyle = 'rgba(92,92,92,0.45)';
+                        fctx.textAlign = 'center';
+                        fctx.fillText(locRes.status === 'fulfilled' ? 'No country data yet.' : 'Could not load country data.', flagsCanvas.width / 2, 150);
+                    } else {
+                        flagsCanvas.addEventListener('click', () => {
+                            if (!swarmCollapsed) {
+                                swarmCollapsed = true;
+                                clearTimeout(swarmTimer);
+                                swarmTimer = setTimeout(swarmScatter, 3000);
+                            } else {
+                                swarmScatter();
+                            }
+                        });
+                        setupFlagsCanvas();
+                        computeSwarmCenters();
+                        spawnSwarm();
+                        drawSwarm();
+                        const swarmRO = new ResizeObserver(() => { setupFlagsCanvas(); computeSwarmCenters(); });
+                        swarmRO.observe(flagsCanvas.parentElement);
+                        window._flagsCleanup = () => {
+                            cancelAnimationFrame(swarmRaf);
+                            swarmRO.disconnect();
+                            clearTimeout(swarmTimer);
+                        };
+                    }
+
                     contentEl.classList.add('loaded');
                 }, 200);
             })

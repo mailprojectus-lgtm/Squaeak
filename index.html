@@ -1587,7 +1587,7 @@
                         });
                     }
 
-                    let pinnedParticle = null, swarmRaf = null;
+                    let pinnedParticle = null, isDragging = false, swarmRaf = null;
                     const infoEl = document.getElementById('flags-info');
 
                     function setSwarmInfo(country) {
@@ -1609,31 +1609,57 @@
                         return best;
                     }
 
-                    flagsCanvas.addEventListener('click', e => {
+                    function scatterFromPin() {
+                        if (!pinnedParticle) return;
+                        swarmParticles.forEach(p => {
+                            if (p === pinnedParticle) return;
+                            const dx = p.x - pinnedParticle.x, dy = p.y - pinnedParticle.y;
+                            const d = Math.hypot(dx, dy) || 1;
+                            p.vx += (dx/d) * (3 + Math.random()*2);
+                            p.vy += (dy/d) * (3 + Math.random()*2);
+                        });
+                    }
+
+                    function getCanvasPos(e) {
                         const rect = flagsCanvas.getBoundingClientRect();
-                        const sx = flagsCanvas.width / rect.width;
-                        const sy = flagsCanvas.height / rect.height;
-                        const mx = (e.clientX - rect.left) * sx;
-                        const my = (e.clientY - rect.top)  * sy;
-                        const hit = hitTest(mx, my);
-                        if (hit && hit !== pinnedParticle) {
+                        return {
+                            x: (e.clientX - rect.left) * (flagsCanvas.width  / rect.width),
+                            y: (e.clientY - rect.top)  * (flagsCanvas.height / rect.height),
+                        };
+                    }
+
+                    function onPointerDown(e) {
+                        const pos = getCanvasPos(e);
+                        const hit = hitTest(pos.x, pos.y);
+                        if (hit) {
                             pinnedParticle = hit;
+                            isDragging = true;
                             setSwarmInfo(swarmCountries[hit.ci]);
-                        } else {
-                            // release: blast outward from pinned position
-                            if (pinnedParticle) {
-                                swarmParticles.forEach(p => {
-                                    if (p === pinnedParticle) return;
-                                    const dx = p.x - pinnedParticle.x, dy = p.y - pinnedParticle.y;
-                                    const d = Math.hypot(dx, dy) || 1;
-                                    p.vx += (dx/d) * (3 + Math.random()*2);
-                                    p.vy += (dy/d) * (3 + Math.random()*2);
-                                });
-                            }
+                            flagsCanvas.setPointerCapture(e.pointerId);
+                            e.preventDefault();
+                        } else if (pinnedParticle) {
+                            scatterFromPin();
                             pinnedParticle = null;
                             setSwarmInfo(null);
                         }
-                    });
+                    }
+
+                    function onPointerMove(e) {
+                        if (!isDragging || !pinnedParticle) return;
+                        const pos = getCanvasPos(e);
+                        const m = BALL_R + 1;
+                        pinnedParticle.x  = Math.min(Math.max(pos.x, m), flagsCanvas.width  - m);
+                        pinnedParticle.y  = Math.min(Math.max(pos.y, m), flagsCanvas.height - m);
+                        pinnedParticle.vx = 0;
+                        pinnedParticle.vy = 0;
+                    }
+
+                    function onPointerUp() { isDragging = false; }
+
+                    flagsCanvas.addEventListener('pointerdown',   onPointerDown);
+                    flagsCanvas.addEventListener('pointermove',   onPointerMove);
+                    flagsCanvas.addEventListener('pointerup',     onPointerUp);
+                    flagsCanvas.addEventListener('pointercancel', onPointerUp);
 
                     function drawSwarm() {
                         const w = flagsCanvas.width, h = flagsCanvas.height;
@@ -1671,7 +1697,10 @@
                             fctx.arc(p.x, p.y, BALL_R, 0, Math.PI*2);
                             if (img && img.complete && img.naturalWidth > 0) {
                                 fctx.clip();
-                                fctx.drawImage(img, p.x-BALL_R, p.y-BALL_R, BALL_R*2, BALL_R*2);
+                                // cover-crop: scale to fill circle maintaining aspect ratio
+                                const sc = Math.max((BALL_R*2) / img.naturalWidth, (BALL_R*2) / img.naturalHeight);
+                                const sw = img.naturalWidth * sc, sh = img.naturalHeight * sc;
+                                fctx.drawImage(img, p.x - sw/2, p.y - sh/2, sw, sh);
                             } else {
                                 fctx.fillStyle = `hsla(${c.hue},65%,58%,0.85)`;
                                 fctx.fill();
@@ -1703,6 +1732,7 @@
                         const swarmRO = new ResizeObserver(() => {
                             setupFlagsCanvas();
                             pinnedParticle = null;
+                            isDragging = false;
                             setSwarmInfo(null);
                             spawnSwarm();
                         });
@@ -1710,6 +1740,10 @@
                         window._flagsCleanup = () => {
                             cancelAnimationFrame(swarmRaf);
                             swarmRO.disconnect();
+                            flagsCanvas.removeEventListener('pointerdown',   onPointerDown);
+                            flagsCanvas.removeEventListener('pointermove',   onPointerMove);
+                            flagsCanvas.removeEventListener('pointerup',     onPointerUp);
+                            flagsCanvas.removeEventListener('pointercancel', onPointerUp);
                         };
                     }
 

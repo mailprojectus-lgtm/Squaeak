@@ -3,12 +3,67 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Squeak - A Secret Shared</title>
+    <title>Squeak — Anonymous Pen-Pal App for Strangers</title>
+    <meta name="description" content="Write an anonymous letter to a stranger. Receive one back. One handwritten letter per month, no profiles — just quiet human connection.">
+    <link rel="canonical" href="https://squeakapp.com/">
+
+    <!-- Open Graph -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://squeakapp.com/">
+    <meta property="og:site_name" content="Squeak">
+    <meta property="og:title" content="Squeak — Write to a Stranger. Hear from One.">
+    <meta property="og:description" content="Write an anonymous letter to a stranger. Receive one back. One handwritten letter per month, no profiles — just quiet human connection.">
+    <meta property="og:image" content="https://squeakapp.com/mascotte.png">
+    <meta property="og:image:alt" content="Squeak mascot — anonymous pen-pal app">
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary">
+    <meta name="twitter:title" content="Squeak — Write to a Stranger. Hear from One.">
+    <meta name="twitter:description" content="Write an anonymous letter to a stranger. Receive one back. One handwritten letter per month, no profiles — just quiet human connection.">
+    <meta name="twitter:image" content="https://squeakapp.com/mascotte.png">
+
+    <!-- JSON-LD Structured Data -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@graph": [
+        {
+          "@type": "WebSite",
+          "@id": "https://squeakapp.com/#website",
+          "url": "https://squeakapp.com/",
+          "name": "Squeak",
+          "description": "Anonymous pen-pal app connecting strangers through handwritten letters, one per month."
+        },
+        {
+          "@type": "MobileApplication",
+          "@id": "https://squeakapp.com/#app",
+          "name": "Squeak",
+          "description": "Write an anonymous letter to a stranger. Receive one back. One handwritten letter per month, no profiles — just quiet human connection.",
+          "operatingSystem": "iOS, Android",
+          "applicationCategory": "SocialNetworkingApplication",
+          "offers": {
+            "@type": "Offer",
+            "price": "0",
+            "priceCurrency": "USD"
+          }
+        },
+        {
+          "@type": "Organization",
+          "@id": "https://squeakapp.com/#organization",
+          "name": "Squeak",
+          "url": "https://squeakapp.com/",
+          "logo": "https://squeakapp.com/mascotte.png"
+        }
+      ]
+    }
+    </script>
+
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Walter+Turncoat&display=swap">
     <link href="https://fonts.googleapis.com/css2?family=Walter+Turncoat&display=swap" rel="stylesheet">
     <script data-goatcounter="https://squeakapp.goatcounter.com/count" async src="//gc.zgo.at/count.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js" defer></script>
     <style>
         :root {
             --background-light: #F7F4EE;
@@ -939,6 +994,23 @@
         </svg>
         <p data-i18n="rotateDevice">Please rotate your device</p>
     </div>
+
+    <!-- Crawlability fallback for non-JS crawlers -->
+    <noscript>
+        <div style="font-family:sans-serif;padding:2rem;max-width:800px;margin:0 auto;line-height:1.6">
+            <h1>Squeak — Anonymous Pen-Pal App for Strangers</h1>
+            <p>Your secret diary. Shared with a stranger.</p>
+            <h2>Feel heard. Feel connected.</h2>
+            <p>Sometimes it feels like you're speaking into a void — and the echo is just your own voice.</p>
+            <p>But we all have a need to be heard. To be seen. To connect.</p>
+            <h2>How Squeak Works</h2>
+            <p>An anonymous experiment and a quiet human connection. You write a letter for a stranger. You receive one from another. And at the end of the month, a quiet farewell.</p>
+            <p>A writes for B. B writes for C. C writes for A.</p>
+            <h2>Get Squeak</h2>
+            <p>Find your first connection. Start sharing your journey.</p>
+            <p><a href="#">Download on the App Store</a> &nbsp;|&nbsp; <a href="#">Get it on Google Play</a></p>
+        </div>
+    </noscript>
 
     <main>
 

@@ -1413,31 +1413,40 @@
 
         applyTranslations(getPreferredLang());
 
+        // ── GoatCounter constants (used by both footer counter and stats page) ──
+        const GC_TOKEN = '1f9mynji0fwhm7lzq1jsuo1eg8hz8fdgxwghcp5ck30gndcai';
+        const GC_BASE  = 'https://squeakapp.goatcounter.com/api/v0';
+        const GC_START = '2026-03-01';
+
         // ── Footer visitor count ──
-        // GoatCounter is the source of truth for website visitors.
-        // Supabase total_users (app signups) is only a fallback.
+        // Uses authenticated API to sum daily_unique → true unique visitor total.
         const updateStatsDisplay = () => {
             const countEl = document.getElementById('visitors-count');
             if (!countEl) return;
 
-            const ctrl = new AbortController();
+            const ctrl  = new AbortController();
             const timer = setTimeout(() => ctrl.abort(), 6000);
-            fetch('https://squeakapp.goatcounter.com/counter/%2F.json', {
+            const today = new Date().toISOString().split('T')[0];
+
+            fetch(`${GC_BASE}/stats/total?start=${GC_START}&end=${today}`, {
+                headers: { Authorization: `Bearer ${GC_TOKEN}` },
                 cache: 'no-store',
                 signal: ctrl.signal,
             })
             .finally(() => clearTimeout(timer))
             .then(r => { if (!r.ok) throw r; return r.json(); })
             .then(j => {
-                const val = j.count_unique ?? j.count;
-                if (val != null) countEl.textContent = String(val);
+                const stats = j.stats || [];
+                const total = j.total_unique ?? stats.reduce((s, d) => s + (d.daily_unique ?? 0), 0);
+                if (total > 0) countEl.textContent = total.toLocaleString();
             })
             .catch(() => {
-                // Fallback: Supabase total_users
-                fetch('https://lovrkeogsaxihyszaaom.supabase.co/functions/v1/website-stats', { cache: 'no-store' })
+                // Fallback: public counter endpoint
+                fetch('https://squeakapp.goatcounter.com/counter/%2F.json', { cache: 'no-store' })
                 .then(r => r.json())
-                .then(d => {
-                    if (d.total_users) countEl.textContent = d.total_users.toLocaleString();
+                .then(j => {
+                    const val = j.count_unique ?? j.count;
+                    if (val != null) countEl.textContent = String(val);
                 })
                 .catch(() => {
                     const footerEl = document.querySelector('#cta .footer-note');
@@ -1484,10 +1493,6 @@
         };
         
         // ── Stats page data loader ── Supabase (app stats) + GoatCounter API (visitors/countries)
-        const GC_TOKEN = '1f9mynji0fwhm7lzq1jsuo1eg8hz8fdgxwghcp5ck30gndcai';
-        const GC_BASE  = 'https://squeakapp.goatcounter.com/api/v0';
-        const GC_START = '2026-03-01';
-
         let visitorsChartInstance = null;
 
         const toFlag = iso2 => {

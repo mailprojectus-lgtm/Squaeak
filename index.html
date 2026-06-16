@@ -212,6 +212,55 @@
             box-shadow: 0px 0px 0px 0px var(--ink-dark);
         }
 
+        /* Primary (active) store button — the live App Store link */
+        .store-button--primary,
+        .dark .store-button--primary {
+            background-color: var(--accent-color);
+            border-color: var(--accent-color);
+            color: #ffffff;
+            box-shadow: 3px 3px 0px 0px var(--ink-light);
+            font-weight: 600;
+        }
+        .dark .store-button--primary {
+            box-shadow: 3px 3px 0px 0px var(--ink-dark);
+        }
+        .store-button--primary:hover,
+        .dark .store-button--primary:hover {
+            box-shadow: 5px 5px 0px 0px var(--ink-light);
+        }
+        .dark .store-button--primary:hover {
+            box-shadow: 5px 5px 0px 0px var(--ink-dark);
+        }
+
+        /* Disabled / coming-soon store button — Google Play not live yet */
+        .store-button--soon,
+        .dark .store-button--soon {
+            opacity: 0.45;
+            box-shadow: none;
+            cursor: default;
+            display: inline-flex;
+            flex-direction: column;
+            align-items: center;
+            line-height: 1.2;
+        }
+        .store-button--soon:hover,
+        .dark .store-button--soon:hover {
+            box-shadow: none;
+            transform: none;
+        }
+        .store-button--soon:active,
+        .dark .store-button--soon:active {
+            transform: none;
+            box-shadow: none;
+        }
+        .store-button--soon .soon-badge {
+            font-size: 11px;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+            margin-top: 2px;
+            opacity: 0.85;
+        }
+
         /* ── Down Arrow ── */
         .down-arrow {
             position: absolute;
@@ -1010,7 +1059,7 @@
             <p>A writes for B. B writes for C. C writes for A.</p>
             <h2>Get Squeak</h2>
             <p>Find your first connection. Start sharing your journey.</p>
-            <p><a href="#">Download on the App Store</a> &nbsp;|&nbsp; <a href="#">Get it on Google Play</a></p>
+            <p><a href="https://apps.apple.com/it/app/squeak-journal/id6760661709?l=en-GB">Download on the App Store</a> &nbsp;|&nbsp; Google Play (coming soon)</p>
         </div>
     </noscript>
 
@@ -1022,8 +1071,11 @@
                 <h1 class="title" data-i18n="title">Squeak</h1>
                 <p class="subtitle" data-i18n="subtitle">Your secret diary. Shared with a stranger.</p>
                 <div class="store-buttons">
-                    <a href="#" class="store-button" data-i18n="appStore">App Store</a>
-                    <a href="#" class="store-button" data-i18n="googlePlay">Google Play</a>
+                    <a href="https://apps.apple.com/it/app/squeak-journal/id6760661709?l=en-GB" target="_blank" rel="noopener" class="store-button store-button--primary" data-i18n="appStore">App Store</a>
+                    <a href="#" class="store-button store-button--soon" aria-disabled="true" tabindex="-1" onclick="return false;">
+                        <span data-i18n="googlePlay">Google Play</span>
+                        <span class="soon-badge" data-i18n="comingSoon">Coming soon</span>
+                    </a>
                 </div>
             </div>
             <img src="mascotte.png" alt="Squeak Mascot" class="mascot">
@@ -1083,8 +1135,11 @@
         <section id="cta" class="experience-section">
             <p class="animated-text" data-i18n-html="cta1">Find your first connection.<br>Start sharing your journey.</p>
             <div class="store-buttons">
-                <a href="#" class="store-button" data-i18n="appStore">App Store</a>
-                <a href="#" class="store-button" data-i18n="googlePlay">Google Play</a>
+                <a href="https://apps.apple.com/it/app/squeak-journal/id6760661709?l=en-GB" target="_blank" rel="noopener" class="store-button store-button--primary" data-i18n="appStore">App Store</a>
+                <a href="#" class="store-button store-button--soon" aria-disabled="true" tabindex="-1" onclick="return false;">
+                    <span data-i18n="googlePlay">Google Play</span>
+                    <span class="soon-badge" data-i18n="comingSoon">Coming soon</span>
+                </a>
             </div>
             <footer class="footer-note">
                 <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap; justify-content:center;">
@@ -1292,6 +1347,7 @@
                 subtitle:       'Your secret diary. Shared with a stranger.',
                 appStore:       'App Store',
                 googlePlay:     'Google Play',
+                comingSoon:     'Coming soon',
                 loneliness1:    "Sometimes it feels like you're speaking into a void...",
                 loneliness2:    '...and the echo is just your own voice.',
                 connection1:    'But we all have a need to be heard.',
@@ -1323,6 +1379,7 @@
                 uniqueVisitors: 'Visiteurs :',
                 thankYou:       '| Merci d\u2019avoir consulté le projet.',
                 rotateDevice:   'Veuillez tourner votre appareil',
+                comingSoon:     'Bientôt disponible',
             },
             it: {
                 subtitle:       'Il tuo diario segreto. Condiviso con uno sconosciuto.',
@@ -1340,6 +1397,7 @@
                 uniqueVisitors: 'Visitatori:',
                 thankYou:       '| Grazie per aver visitato il progetto.',
                 rotateDevice:   'Ruota il tuo dispositivo',
+                comingSoon:     'Presto disponibile',
             },
             de: {
                 subtitle:       'Dein geheimes Tagebuch. Geteilt mit einem Fremden.',
@@ -1357,6 +1415,7 @@
                 uniqueVisitors: 'Besucher:',
                 thankYou:       '| Danke, dass du dir das Projekt ansiehst.',
                 rotateDevice:   'Bitte drehe dein Gerät',
+                comingSoon:     'Demnächst verfügbar',
             },
             es: {
                 subtitle:       'Tu diario secreto. Compartido con un extraño.',
@@ -1374,6 +1433,7 @@
                 uniqueVisitors: 'Visitantes:',
                 thankYou:       '| Gracias por visitar el proyecto.',
                 rotateDevice:   'Por favor, gira tu dispositivo',
+                comingSoon:     'Próximamente',
             },
             zh: {
                 subtitle:       '你的秘密日记。与陌生人分享。',
@@ -1391,6 +1451,7 @@
                 uniqueVisitors: '访客：',
                 thankYou:       '| 感谢你查看该项目。',
                 rotateDevice:   '请将设备竖向放置',
+                comingSoon:     '即将推出',
             },
             hi: {
                 subtitle:       'आपकी गुप्त डायरी। एक अजनबी के साथ साझा की गई।',
@@ -1408,6 +1469,7 @@
                 uniqueVisitors: 'आगंतुक:',
                 thankYou:       '| परियोजना को देखने के लिए धन्यवाद।',
                 rotateDevice:   'कृपया अपना डिवाइस घुमाएं',
+                comingSoon:     'जल्द आ रहा है',
             },
             ar: {
                 subtitle:       'يومياتك السرية. مشتركة مع شخص غريب.',
@@ -1425,6 +1487,7 @@
                 uniqueVisitors: 'زوار:',
                 thankYou:       '| شكرًا لزيارة المشروع.',
                 rotateDevice:   'يرجى تدوير جهازك',
+                comingSoon:     'قريبًا',
             },
             ja: {
                 subtitle:       'あなたの秘密の日記。見知らぬ人と共有します。',
@@ -1442,6 +1505,7 @@
                 uniqueVisitors: '訪問者：',
                 thankYou:       '| プロジェクトをご覧いただきありがとうございます。',
                 rotateDevice:   'デバイスを縦向きにしてください',
+                comingSoon:     '近日公開',
             },
             ko: {
                 subtitle:       '당신의 비밀 다이어리. 낯선 사람과 공유됩니다.',
@@ -1459,6 +1523,7 @@
                 uniqueVisitors: '방문자:',
                 thankYou:       '| 프로젝트를 확인해 주셔서 감사합니다.',
                 rotateDevice:   '기기를 세로로 돌려주세요',
+                comingSoon:     '곧 출시',
             },
         };
 
